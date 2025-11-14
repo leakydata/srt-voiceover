@@ -27,7 +27,7 @@ def transcribe_audio_to_srt(
     output_srt_path: str,
     model: str = "base",
     language: Optional[str] = None,
-    enable_speaker_detection: bool = True,
+    enable_speaker_detection: bool = False,
     verbose: bool = True,
     # API mode (optional - for OpenAI API or compatible servers)
     use_api: bool = False,
@@ -47,7 +47,7 @@ def transcribe_audio_to_srt(
         model: Whisper model size - "tiny", "base", "small", "medium", "large"
                (Local mode) or "whisper-1" (API mode)
         language: Optional language code (en, es, fr, etc.)
-        enable_speaker_detection: Attempt to detect different speakers
+        enable_speaker_detection: Attempt to detect different speakers (default: False = single speaker)
         verbose: Print progress information
         use_api: If True, use API mode instead of local Whisper
         api_url: API endpoint URL (for API mode)
@@ -395,6 +395,7 @@ def audio_to_voiceover_workflow(
     use_whisper_api: bool = False,
     whisper_api_url: Optional[str] = None,
     whisper_api_key: Optional[str] = None,
+    enable_speaker_detection: bool = False,
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
