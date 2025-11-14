@@ -1,0 +1,13 @@
+default_voice: en-US-AndrewMultilingualNeural
+rate: +0%
+volume: +0%
+pitch: +0Hz
+timing_tolerance_ms: 150
+whisper_model: base
+speaker_voices:
+  Nathan: en-US-AndrewMultilingualNeural
+  Nicole: en-US-EmmaMultilingualNeural
+  John: en-US-GuyNeural
+  Sarah: en-US-JennyNeural
+  Speaker A: en-US-AndrewMultilingualNeural
+  Speaker B: en-US-EmmaMultilingualNeural
