@@ -280,17 +280,12 @@ def handle_revoice_command(args):
     whisper_model = config.get('whisper_model', 'base')
     
     # TTS settings
-    tts_url = args.tts_url or config.get('edge_tts_url')
-    tts_api_key = args.api_key or config.get('api_key', '')
-    
     language = args.language or config.get('language')
-    speed = args.speed if args.speed is not None else config.get('speed', 1.0)
+    rate = args.rate or config.get('rate', '+0%')
+    volume = args.volume or config.get('volume', '+0%')
+    pitch = args.pitch or config.get('pitch', '+0Hz')
     speaker_voices = config.get('speaker_voices', {})
     default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
-    
-    if not tts_url:
-        print("Error: Edge TTS URL is required. Use --tts-url or provide edge_tts_url in config file.")
-        sys.exit(1)
     
     output_path = args.output or "revoiced.mp3"
     temp_srt = "temp_transcription.srt" if not args.keep_srt else output_path.replace('.mp3', '.srt').replace('.wav', '.srt')
@@ -303,13 +298,13 @@ def handle_revoice_command(args):
         srt_path, audio_path = audio_to_voiceover_workflow(
             input_audio=args.input,
             output_audio=output_path,
-            edge_tts_url=tts_url,
-            edge_tts_api_key=tts_api_key,
             speaker_voices=speaker_voices,
             default_voice=default_voice,
             temp_srt=temp_srt,
             language=language,
-            speed=speed,
+            rate=rate,
+            volume=volume,
+            pitch=pitch,
             whisper_model=whisper_model,
             verbose=not args.quiet,
             use_whisper_api=use_whisper_api or (whisper_api_url is not None),
@@ -328,7 +323,7 @@ def handle_revoice_command(args):
     except ImportError as e:
         print(f"\n❌ {e}")
         print("\nTo use re-voicing features, install:")
-        print("  pip install openai-whisper")
+        print("  pip install edge-tts openai-whisper")
         print("\nOr install with all features:")
         print("  pip install srt-voiceover[all]")
         sys.exit(1)

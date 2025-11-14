@@ -2,46 +2,40 @@
 # Copy this file and customize for your needs
 
 # ===================================
-# Edge TTS (Text-to-Speech) - REQUIRED for voiceover generation
+# Voice Settings
 # ===================================
-edge_tts_url: "http://localhost:5050/v1/audio/speech"
-api_key: "your_api_key_here"
+default_voice: "en-US-AndrewMultilingualNeural"
+
+# Speech adjustments (Edge TTS format)
+rate: "+0%"      # Speed: -50% to +100% (e.g., "+20%" = 20% faster)
+volume: "+0%"    # Volume: -50% to +100%
+pitch: "+0Hz"    # Pitch: -50Hz to +100Hz
+
+# Timing tolerance in milliseconds for audio alignment
+timing_tolerance_ms: 150
 
 # ===================================
-# Whisper Transcription (Speech-to-Text) - OPTIONAL
+# Whisper Transcription - OPTIONAL
 # ===================================
-# By default, uses LOCAL whisper (openai-whisper library)
-# No server needed! Just install: pip install openai-whisper
-
+# Uses LOCAL whisper by default (pip install openai-whisper)
 whisper_model: "base"  # Model size: tiny, base, small, medium, large
-use_whisper_api: false  # Set to true only if using OpenAI API or custom server
+use_whisper_api: false  # Set to true only if using OpenAI API
 
 # Only needed if use_whisper_api is true:
 # whisper_api_url: "https://api.openai.com/v1/audio/transcriptions"
 # whisper_api_key: "sk-your-openai-api-key"
 
-# Default voice for speakers without specific assignment
-default_voice: "en-US-AndrewMultilingualNeural"
-
-# Output audio format (mp3 or wav)
-response_format: "mp3"
-
-# Speech speed multiplier (1.0 = normal, 0.5 = half speed, 2.0 = double speed)
-speed: 1.0
-
-# Timing tolerance in milliseconds for audio alignment
-# Audio within this tolerance of target duration won't be adjusted
-timing_tolerance_ms: 150
-
+# ===================================
+# Speaker to Voice Mapping
+# ===================================
 # Map speaker names to specific voices
-# Add entries for each speaker in your SRT files
+# Works for both manual SRT labels and auto-detected speakers
 speaker_voices:
   Nathan: "en-US-AndrewMultilingualNeural"
   Nicole: "en-US-EmmaMultilingualNeural"
   John: "en-US-GuyNeural"
   Sarah: "en-US-JennyNeural"
-  Mike: "en-US-BrianNeural"
-  Emma: "en-US-AriaNeural"
+  Speaker A: "en-US-AndrewMultilingualNeural"   # Auto-detected
+  Speaker B: "en-US-EmmaMultilingualNeural"     # Auto-detected
   
 # See edgetts_voices_list.md for complete list of available voices
-
