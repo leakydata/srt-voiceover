@@ -54,17 +54,19 @@ def create_sample_config(output_path: str, format: str = 'yaml') -> None:
         format: Format to use ('yaml' or 'json')
     """
     sample_config = {
-        "edge_tts_url": "http://localhost:5050/v1/audio/speech",
-        "api_key": "your_api_key_here",
         "default_voice": "en-US-AndrewMultilingualNeural",
-        "response_format": "mp3",
-        "speed": 1.0,
+        "rate": "+0%",
+        "volume": "+0%",
+        "pitch": "+0Hz",
         "timing_tolerance_ms": 150,
+        "whisper_model": "base",
         "speaker_voices": {
             "Nathan": "en-US-AndrewMultilingualNeural",
             "Nicole": "en-US-EmmaMultilingualNeural",
             "John": "en-US-GuyNeural",
             "Sarah": "en-US-JennyNeural",
+            "Speaker A": "en-US-AndrewMultilingualNeural",
+            "Speaker B": "en-US-EmmaMultilingualNeural",
         }
     }
     
@@ -108,11 +110,10 @@ Examples:
     parser.add_argument('input', nargs='?', help='Input SRT file')
     parser.add_argument('-o', '--output', help='Output audio file (default: output.mp3)')
     parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
-    parser.add_argument('--url', help='Edge TTS API URL')
-    parser.add_argument('--api-key', help='API key for authentication')
     parser.add_argument('--default-voice', help='Default voice for unlabeled speakers')
-    parser.add_argument('--format', choices=['mp3', 'wav'], help='Output audio format')
-    parser.add_argument('--speed', type=float, help='Speech speed multiplier (default: 1.0)')
+    parser.add_argument('--rate', help='Speech rate (e.g., "+0%%", "-50%%", "+100%%")')
+    parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%", "+100%%")')
+    parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")')
     parser.add_argument('--tolerance', type=int, help='Timing tolerance in milliseconds (default: 150)')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
@@ -135,11 +136,12 @@ Examples:
     revoice_parser.add_argument('input', help='Input audio file')
     revoice_parser.add_argument('-o', '--output', help='Output audio file (default: revoiced.mp3)')
     revoice_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
-    revoice_parser.add_argument('--whisper-url', help='Whisper API URL')
-    revoice_parser.add_argument('--tts-url', help='Edge TTS API URL')
-    revoice_parser.add_argument('--api-key', help='API key for authentication')
+    revoice_parser.add_argument('--whisper-url', help='Whisper API URL (for API mode)')
+    revoice_parser.add_argument('--api-key', help='API key for Whisper API (if using API mode)')
     revoice_parser.add_argument('--language', help='Language code for transcription')
-    revoice_parser.add_argument('--speed', type=float, help='Speech speed multiplier')
+    revoice_parser.add_argument('--rate', help='Speech rate (e.g., "+0%%", "-50%%")')
+    revoice_parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%")')
+    revoice_parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz")')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -180,25 +182,15 @@ def handle_voiceover_command(args, parser):
         config = load_config(args.config)
     
     # Get parameters (CLI args override config)
-    edge_tts_url = args.url or config.get('edge_tts_url')
-    api_key = args.api_key or config.get('api_key')
     default_voice = args.default_voice or config.get('default_voice', 'en-US-AndrewMultilingualNeural')
-    response_format = args.format or config.get('response_format', 'mp3')
-    speed = args.speed if args.speed is not None else config.get('speed', 1.0)
+    rate = args.rate or config.get('rate', '+0%')
+    volume = args.volume or config.get('volume', '+0%')
+    pitch = args.pitch or config.get('pitch', '+0Hz')
     timing_tolerance_ms = args.tolerance if args.tolerance is not None else config.get('timing_tolerance_ms', 150)
     speaker_voices = config.get('speaker_voices', {})
     
-    # Validate required parameters
-    if not edge_tts_url:
-        print("Error: Edge TTS URL is required. Use --url or provide it in config file.")
-        sys.exit(1)
-    
-    if not api_key:
-        print("Error: API key is required. Use --api-key or provide it in config file.")
-        sys.exit(1)
-    
     # Set output path
-    output_path = args.output or f"output.{response_format}"
+    output_path = args.output or "output.mp3"
     
     # Check if input file exists
     if not Path(args.input).exists():
@@ -211,16 +203,20 @@ def handle_voiceover_command(args, parser):
         build_voiceover_from_srt(
             srt_path=args.input,
             output_audio_path=output_path,
-            edge_tts_url=edge_tts_url,
-            api_key=api_key,
             speaker_voices=speaker_voices,
             default_voice=default_voice,
-            response_format=response_format,
-            speed=speed,
+            rate=rate,
+            volume=volume,
+            pitch=pitch,
             timing_tolerance_ms=timing_tolerance_ms,
             verbose=not args.quiet,
         )
         print("✓ Conversion complete!")
+    except ImportError as e:
+        print(f"\n❌ {e}")
+        print("\nTo use voiceover features, install:")
+        print("  pip install edge-tts")
+        sys.exit(1)
     except Exception as e:
         print(f"Error during conversion: {e}")
         sys.exit(1)

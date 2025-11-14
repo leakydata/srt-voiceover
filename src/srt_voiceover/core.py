@@ -3,10 +3,16 @@ Core functionality for SRT to voiceover conversion
 """
 
 import io
-import requests
+import asyncio
 import pysrt
 from pydub import AudioSegment
 from typing import Optional, Dict, Tuple
+
+try:
+    import edge_tts
+    EDGE_TTS_AVAILABLE = True
+except ImportError:
+    EDGE_TTS_AVAILABLE = False
 
 
 def srt_time_to_milliseconds(t) -> int:
@@ -102,47 +108,51 @@ def get_voice_for_speaker(
 def synthesize_speech_segment(
     text: str,
     voice: str,
-    edge_tts_url: str,
-    api_key: str,
-    response_format: str = "mp3",
-    speed: float = 1.0,
+    rate: str = "+0%",
+    volume: str = "+0%",
+    pitch: str = "+0Hz",
 ) -> AudioSegment:
     """
-    Call your local OpenAI-EdgeTTS style server and return a pydub AudioSegment.
+    Synthesize speech using Edge TTS and return a pydub AudioSegment.
     
     Args:
         text: Text to synthesize
-        voice: Voice ID to use
-        edge_tts_url: URL of the Edge TTS API
-        api_key: API key for authentication
-        response_format: Audio format (mp3 or wav)
-        speed: Speech speed multiplier
+        voice: Voice ID to use (e.g., "en-US-AndrewMultilingualNeural")
+        rate: Speech rate adjustment (e.g., "+0%", "-50%", "+100%")
+        volume: Volume adjustment (e.g., "+0%", "-50%", "+100%")
+        pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
         
     Returns:
         AudioSegment containing the synthesized speech
         
     Raises:
-        requests.HTTPError: If the API request fails
+        ImportError: If edge_tts is not installed
     """
-
-    payload = {
-        "input": text,
-        "voice": voice,
-        "response_format": response_format,
-        "speed": speed,
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + api_key,
-    }
-
-    resp = requests.post(edge_tts_url, headers=headers, json=payload)
-    resp.raise_for_status()
-
-    audio_bytes = io.BytesIO(resp.content)
-    segment = AudioSegment.from_file(audio_bytes, format=response_format)
+    if not EDGE_TTS_AVAILABLE:
+        raise ImportError(
+            "edge-tts not installed. Install it with:\n"
+            "pip install edge-tts"
+        )
+    
+    # Create communicate object
+    communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch)
+    
+    # Run async synthesis
+    audio_data = asyncio.run(_synthesize_async(communicate))
+    
+    # Convert to AudioSegment
+    audio_bytes = io.BytesIO(audio_data)
+    segment = AudioSegment.from_file(audio_bytes, format="mp3")
     return segment
+
+
+async def _synthesize_async(communicate) -> bytes:
+    """Helper to run edge_tts synthesis asynchronously."""
+    audio_data = b""
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_data += chunk["data"]
+    return audio_data
 
 
 def align_segment_duration(
@@ -188,29 +198,30 @@ def align_segment_duration(
 def build_voiceover_from_srt(
     srt_path: str,
     output_audio_path: str,
-    edge_tts_url: str,
-    api_key: str,
     speaker_voices: Optional[Dict[str, str]] = None,
     default_voice: str = "en-US-AndrewMultilingualNeural",
-    response_format: str = "mp3",
-    speed: float = 1.0,
+    rate: str = "+0%",
+    volume: str = "+0%",
+    pitch: str = "+0Hz",
     timing_tolerance_ms: int = 150,
     verbose: bool = True,
 ) -> None:
     """
-    Build a complete voiceover audio file from an SRT subtitle file.
+    Build a complete voiceover audio file from an SRT subtitle file using Edge TTS.
     
     Args:
         srt_path: Path to input SRT file
         output_audio_path: Path for output audio file
-        edge_tts_url: URL of the Edge TTS API
-        api_key: API key for authentication
         speaker_voices: Dictionary mapping speaker names to voice IDs
         default_voice: Default voice for unlabeled speakers
-        response_format: Output audio format (mp3 or wav)
-        speed: Speech speed multiplier
+        rate: Speech rate (e.g., "+0%", "-50%", "+100%")
+        volume: Volume level (e.g., "+0%", "-50%", "+100%")
+        pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
         timing_tolerance_ms: Tolerance for timing alignment in milliseconds
         verbose: Print progress information
+        
+    Raises:
+        ImportError: If edge_tts is not installed
     """
     if speaker_voices is None:
         speaker_voices = {}
@@ -250,10 +261,9 @@ def build_voiceover_from_srt(
         segment = synthesize_speech_segment(
             text=cleaned_text,
             voice=voice_for_segment,
-            edge_tts_url=edge_tts_url,
-            api_key=api_key,
-            response_format=response_format,
-            speed=speed,
+            rate=rate,
+            volume=volume,
+            pitch=pitch,
         )
 
         if target_duration > 0:
@@ -262,7 +272,12 @@ def build_voiceover_from_srt(
         final_audio += segment
         current_position_ms += len(segment)
 
-    final_audio.export(output_audio_path, format=response_format)
+    # Determine output format from file extension
+    output_format = "mp3"  # default
+    if output_audio_path.lower().endswith('.wav'):
+        output_format = "wav"
+    
+    final_audio.export(output_audio_path, format=output_format)
     if verbose:
         print(f"✓ Saved final voiceover to: {output_audio_path}")
 

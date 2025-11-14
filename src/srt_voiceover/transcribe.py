@@ -382,13 +382,13 @@ def extract_audio_from_video(
 def audio_to_voiceover_workflow(
     input_audio: str,
     output_audio: str,
-    edge_tts_url: str,
-    edge_tts_api_key: str,
     speaker_voices: Optional[Dict[str, str]] = None,
     default_voice: str = "en-US-AndrewMultilingualNeural",
     temp_srt: str = "temp_transcription.srt",
     language: Optional[str] = None,
-    speed: float = 1.0,
+    rate: str = "+0%",
+    volume: str = "+0%",
+    pitch: str = "+0Hz",
     whisper_model: str = "base",
     verbose: bool = True,
     # Optional: Use API for transcription instead of local
@@ -404,13 +404,13 @@ def audio_to_voiceover_workflow(
     Args:
         input_audio: Input audio file path
         output_audio: Output audio file path
-        edge_tts_url: Edge TTS API URL
-        edge_tts_api_key: API key for Edge TTS
         speaker_voices: Dictionary mapping detected speakers to voices
         default_voice: Default voice
         temp_srt: Temporary SRT file path
         language: Optional language for transcription
-        speed: Speech speed
+        rate: Speech rate (e.g., "+0%", "-50%", "+100%")
+        volume: Volume level (e.g., "+0%", "-50%", "+100%")
+        pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
         whisper_model: Whisper model size (tiny/base/small/medium/large)
         verbose: Print progress
         use_whisper_api: Use API instead of local Whisper
@@ -451,11 +451,11 @@ def audio_to_voiceover_workflow(
     build_voiceover_from_srt(
         srt_path=srt_path,
         output_audio_path=output_audio,
-        edge_tts_url=edge_tts_url,
-        api_key=edge_tts_api_key,
         speaker_voices=speaker_voices or {},
         default_voice=default_voice,
-        speed=speed,
+        rate=rate,
+        volume=volume,
+        pitch=pitch,
         verbose=verbose,
     )
     
