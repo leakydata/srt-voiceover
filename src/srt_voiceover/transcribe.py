@@ -314,12 +314,13 @@ def _detect_speaker_heuristic(text: str, segment_index: int) -> Optional[str]:
     return "Speaker A" if segment_index % 2 == 0 else "Speaker B"
 
 
-def _get_pyannote_speakers(audio_path: str, verbose: bool = True) -> Dict:
+def _get_pyannote_speakers(audio_path: str, device: str = "cpu", verbose: bool = True) -> Dict:
     """
     Use pyannote.audio for professional speaker diarization.
     
     Args:
         audio_path: Path to audio file
+        device: Device to use ("cpu" or "cuda")
         verbose: Print progress messages
         
     Returns:
@@ -363,9 +364,10 @@ def _get_pyannote_speakers(audio_path: str, verbose: bool = True) -> Dict:
             use_auth_token=hf_token
         )
         
-        # Run diarization
-        if verbose:
-            print("Running speaker diarization... (this may take a while on CPU)")
+    # Run diarization
+    if verbose:
+        device_msg = "This will be faster on GPU" if device == "cpu" else "Using GPU acceleration"
+        print(f"Running speaker diarization... ({device_msg})")
         
         diarization = pipeline(audio_path)
         
@@ -532,6 +534,7 @@ def audio_to_voiceover_workflow(
     enable_speaker_detection: bool = False,
     # Professional diarization (optional - requires HF_TOKEN env var)
     use_pyannote: bool = False,
+    device: str = "cpu",
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
