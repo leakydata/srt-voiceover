@@ -139,6 +139,8 @@ Examples:
                                     help='Enable basic multi-speaker detection (default: single speaker)')
     transcribe_parser.add_argument('--use-pyannote', action='store_true',
                                     help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
+    transcribe_parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto',
+                                    help='Device to use for transcription/diarization (default: auto)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
