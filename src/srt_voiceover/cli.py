@@ -33,6 +33,46 @@ def detect_device():
         return "cpu", None
 
 
+def list_available_voices():
+    """List all available Edge TTS voices using the edge-tts module."""
+    import asyncio
+    import edge_tts
+    
+    async def _list_voices():
+        print("Fetching available Edge TTS voices...\n")
+        voices = await edge_tts.list_voices()
+        
+        # Group by language
+        by_language = {}
+        for voice in voices:
+            lang = voice['Locale']
+            if lang not in by_language:
+                by_language[lang] = []
+            by_language[lang].append(voice)
+        
+        # Print organized list
+        for lang in sorted(by_language.keys()):
+            print(f"\n{lang}:")
+            print("-" * 80)
+            for voice in sorted(by_language[lang], key=lambda v: v['ShortName']):
+                gender = voice.get('Gender', 'Unknown')
+                name = voice['ShortName']
+                friendly_name = voice.get('FriendlyName', voice.get('LocalName', name))
+                
+                # Handle Unicode characters in voice names for Windows console
+                try:
+                    print(f"  {name:50s} [{gender}] - {friendly_name}")
+                except UnicodeEncodeError:
+                    # Fallback: encode with errors='replace' or use ASCII-only friendly name
+                    friendly_name_safe = friendly_name.encode('ascii', errors='replace').decode('ascii')
+                    print(f"  {name:50s} [{gender}] - {friendly_name_safe}")
+        
+        print(f"\n\nTotal voices available: {len(voices)}")
+        print("\nUsage: Specify voice in config.yaml or with --default-voice flag")
+    
+    asyncio.run(_list_voices())
+
+
 def load_config(config_path: str) -> Dict:
     """
     Load configuration from JSON or YAML file.
