@@ -37,11 +37,34 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# CPU-only transcription (default)
 transcription = [
     "openai-whisper>=20231117",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
 ]
+
+# CPU-only speaker diarization
 diarization = [
     "pyannote.audio>=3.1.0",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+]
+
+# GPU/CUDA support - install PyTorch with CUDA first, then this adds the features
+# Users should run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Then: pip install srt-voiceover[cuda]
+cuda = [
+    "openai-whisper>=20231117",
+    "pyannote.audio>=3.1.0",
+]
+
+# Everything (CPU versions)
+all = [
+    "openai-whisper>=20231117",
+    "pyannote.audio>=3.1.0",
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
 ]
 all = [
     "openai-whisper>=20231117",
