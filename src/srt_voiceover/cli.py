@@ -348,6 +348,7 @@ def handle_revoice_command(args):
             use_whisper_api=use_whisper_api or (whisper_api_url is not None),
             whisper_api_url=whisper_api_url,
             whisper_api_key=whisper_api_key,
+            detect_speakers=args.multi_speaker,
         )
         
         # Clean up temp files
