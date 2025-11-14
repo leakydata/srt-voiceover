@@ -230,7 +230,7 @@ def handle_voiceover_command(args, parser):
         )
         print("[OK] Conversion complete!")
     except ImportError as e:
-        print(f"\n❌ {e}")
+        print(f"\n[ERROR] {e}")
         print("\nTo use voiceover features, install:")
         print("  pip install edge-tts")
         sys.exit(1)
@@ -273,7 +273,7 @@ def handle_transcribe_command(args):
         )
         print(f"[OK] Transcription complete: {output_path}")
     except ImportError as e:
-        print(f"\n❌ {e}")
+        print(f"\n[ERROR] {e}")
         print("\nTo use transcription features, install:")
         print("  pip install openai-whisper")
         print("\nOr install with transcription support:")
@@ -374,7 +374,7 @@ def handle_revoice_command(args):
             print(f"\nTo merge with original video, run:")
             print(f'  ffmpeg -i "{args.input}" -i "{audio_path}" -c:v copy -map 0:v:0 -map 1:a:0 "{output_video}"')
     except ImportError as e:
-        print(f"\n❌ {e}")
+        print(f"\n[ERROR] {e}")
         print("\nTo use re-voicing features, install:")
         print("  pip install edge-tts openai-whisper")
         print("\nOr install with all features:")

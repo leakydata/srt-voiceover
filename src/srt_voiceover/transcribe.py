@@ -62,7 +62,7 @@ def transcribe_audio_to_srt(
     """
     
     if verbose:
-        print(f"📂 Loading audio file: {audio_path}")
+        print(f"Loading audio file: {audio_path}")
     
     # Check if file exists
     audio_file = Path(audio_path)
@@ -142,13 +142,13 @@ def transcribe_audio_to_srt(
 def _transcribe_local(audio_path: str, model: str, language: Optional[str], verbose: bool) -> Dict:
     """Transcribe using local Whisper model."""
     if verbose:
-        print(f"🎤 Loading Whisper model '{model}'... (first run will download the model)")
+        print(f"Loading Whisper model '{model}'... (first run will download the model)")
     
     # Load model
     whisper_model = whisper.load_model(model)
     
     if verbose:
-        print(f"🎤 Transcribing audio... (this may take a while)")
+        print(f"Transcribing audio... (this may take a while)")
     
     # Transcribe
     transcribe_options = {}
@@ -176,7 +176,7 @@ def _transcribe_via_api(
         raise ValueError("API key required for API mode")
     
     if verbose:
-        print(f"🎤 Transcribing via API... (this may take a while)")
+        print(f"Transcribing via API... (this may take a while)")
     
     audio_file = Path(audio_path)
     
@@ -317,7 +317,7 @@ def convert_audio_format(
         output_path = str(input_file.with_suffix(f'.{output_format}'))
     
     if verbose:
-        print(f"🔄 Converting audio format...")
+        print(f"Converting audio format...")
     
     # Load audio
     audio = AudioSegment.from_file(input_path)
@@ -362,7 +362,7 @@ def extract_audio_from_video(
         output_audio_path = str(video_file.with_suffix(f'.{audio_format}'))
     
     if verbose:
-        print(f"🎬 Extracting audio from video...")
+        print(f"Extracting audio from video...")
     
     try:
         # Use pydub which uses ffmpeg internally
@@ -424,7 +424,7 @@ def audio_to_voiceover_workflow(
     
     if verbose:
         print("=" * 60)
-        print("🎙️  AUDIO RE-VOICING WORKFLOW")
+        print("AUDIO RE-VOICING WORKFLOW")
         print("=" * 60)
         print()
     
@@ -462,10 +462,10 @@ def audio_to_voiceover_workflow(
     if verbose:
         print()
         print("=" * 60)
-        print("✅ COMPLETE! Your re-voiced audio is ready!")
+        print("[COMPLETE] Your re-voiced audio is ready!")
         print("=" * 60)
-        print(f"📄 Transcription: {srt_path}")
-        print(f"🎵 New audio: {output_audio}")
+        print(f"Transcription: {srt_path}")
+        print(f"New audio: {output_audio}")
     
     return srt_path, output_audio
 
