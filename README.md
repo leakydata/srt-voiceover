@@ -17,15 +17,17 @@ Perfect alternative to SpeechGen, Murf.ai, and other paid dubbing services! Crea
 
 ### 🎤 Audio Transcription (NEW!)
 - **🎙️ Audio → SRT**: Transcribe any audio file to subtitles with timestamps
-- **👥 Speaker Detection**: Basic speaker identification (Speaker A/B)
-- **🎬 Video Support**: Extract audio from video files automatically
+- **👥 Speaker Detection**: Three modes - single speaker, basic heuristic, or professional ML-based (pyannote)
+- **🎬 Video Support**: Extract audio from MP4/AVI/MKV and other video formats automatically
 - **🌍 Multi-Language**: Supports 50+ languages via Whisper
+- **💻 Local Processing**: Runs on your machine (no cloud API needed)
 
 ### 🔊 Voice Generation
 - **🎭 Multi-Speaker Support**: Assign different voices to different speakers
 - **⏱️ Perfect Timing**: Synchronizes audio precisely with subtitle timestamps
-- **🌍 70+ Voices**: Access to all Microsoft Edge TTS voices in 40+ languages
-- **🎚️ Speed Control**: Adjust speech rate from 0.25x to 4.0x
+- **🌍 400+ Voices**: Access to all Microsoft Edge TTS voices in 80+ languages
+- **🎚️ Voice Customization**: Adjust speech rate, volume, and pitch
+- **🚫 No API Costs**: Uses free Microsoft Edge TTS service directly
 
 ### 🔄 Complete Workflow
 - **One-Command Dubbing**: Audio → Transcribe → Re-voice in one step
@@ -54,23 +56,23 @@ pip install -e .
    - Mac: `brew install ffmpeg`
    - Linux: `sudo apt-get install ffmpeg`
 
-2. **Edge TTS Server** - For voiceover generation (text-to-speech)
-   - Clone and run: [OpenAI-EdgeTTS](https://github.com/travisvn/openai-edge-tts)
-   ```bash
-   git clone https://github.com/travisvn/openai-edge-tts.git
-   cd openai-edge-tts
-   npm install
-   npm start
-   ```
-   Provides endpoint: `http://localhost:5050/v1/audio/speech`
-
-3. **OpenAI Whisper** (Optional) - For audio transcription features
+2. **OpenAI Whisper** (Optional) - For audio transcription features
    ```bash
    pip install openai-whisper
-   # Or install srt-voiceover with transcription support
+   # Or install with transcription support
    pip install srt-voiceover[transcription]
    ```
-   Transcription runs **locally** on your machine (no server needed!)
+
+3. **Pyannote Audio** (Optional) - For professional speaker diarization
+   ```bash
+   pip install pyannote.audio
+   # Or install with diarization support
+   pip install srt-voiceover[diarization]
+   
+   # Requires HuggingFace token (you'll be prompted when first used)
+   # Get token at: https://huggingface.co/settings/tokens
+   # Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
+   ```
 
 ### Basic Usage
 
@@ -205,17 +207,24 @@ Create a `config.yaml` file:
 
 ```yaml
 # ===================================
-# Edge TTS (Text-to-Speech) - REQUIRED
+# Voice Settings
 # ===================================
-edge_tts_url: "http://localhost:5050/v1/audio/speech"
-api_key: "your_api_key_here"
+default_voice: "en-US-AndrewMultilingualNeural"
+
+# Speech adjustments
+rate: "+0%"      # Speed: -50% to +100%
+volume: "+0%"    # Volume: -50% to +100%
+pitch: "+0Hz"    # Pitch: -50Hz to +100Hz
+
+# Timing tolerance in milliseconds
+timing_tolerance_ms: 150
 
 # ===================================
 # Whisper Transcription - OPTIONAL
 # ===================================
 # Uses LOCAL whisper by default (pip install openai-whisper)
 whisper_model: "base"  # tiny, base, small, medium, large
-use_whisper_api: false  # Only set true for OpenAI API
+use_whisper_api: false
 
 # Optional: OpenAI API mode
 # use_whisper_api: true
@@ -223,14 +232,14 @@ use_whisper_api: false  # Only set true for OpenAI API
 # whisper_api_key: "sk-your-openai-key"
 
 # ===================================
-# Voice Settings
+# Pyannote Speaker Diarization - OPTIONAL
 # ===================================
-default_voice: "en-US-AndrewMultilingualNeural"
-response_format: "mp3"
-speed: 1.0
-timing_tolerance_ms: 150
+use_pyannote: false  # Set true for professional speaker detection
+# hf_token: "hf_your_token"  # Optional, will be prompted if needed
 
-# Map speaker names to voices
+# ===================================
+# Speaker to Voice Mapping
+# ===================================
 speaker_voices:
   Nathan: "en-US-AndrewMultilingualNeural"
   Nicole: "en-US-EmmaMultilingualNeural"
@@ -238,19 +247,7 @@ speaker_voices:
   Speaker B: "en-US-JennyNeural"
 ```
 
-Or use JSON format:
-
-```json
-{
-  "edge_tts_url": "http://localhost:5050/v1/audio/speech",
-  "api_key": "your_api_key_here",
-  "default_voice": "en-US-AndrewMultilingualNeural",
-  "speaker_voices": {
-    "Nathan": "en-US-AndrewMultilingualNeural",
-    "Nicole": "en-US-EmmaMultilingualNeural"
-  }
-}
-```
+See `examples/config.yaml` for a complete example configuration.
 
 ### SRT File Format
 
@@ -286,12 +283,37 @@ Popular voices:
 
 ## 🔧 Advanced Features
 
-### Speed Control
+### Voice Customization
 
-Adjust speech rate from 0.25x (very slow) to 4.0x (very fast):
+Adjust speech rate, volume, and pitch:
 
 ```bash
-srt-voiceover input.srt -o output.mp3 -c config.yaml --speed 1.2
+# Faster speech
+srt-voiceover input.srt -o output.mp3 --rate "+20%"
+
+# Quieter volume
+srt-voiceover input.srt -o output.mp3 --volume "-30%"
+
+# Lower pitch
+srt-voiceover input.srt -o output.mp3 --pitch "-50Hz"
+
+# Combine multiple adjustments
+srt-voiceover input.srt -o output.mp3 --rate "+10%" --volume "+5%" --pitch "-20Hz"
+```
+
+### Speaker Detection Modes
+
+Choose your speaker detection mode based on your needs:
+
+```bash
+# Single speaker (DEFAULT - fastest)
+srt-voiceover revoice video.mp4 -o output.mp3
+
+# Basic multi-speaker (fast, heuristic-based)
+srt-voiceover revoice video.mp4 -o output.mp3 --multi-speaker
+
+# Professional pyannote (best quality, slower)
+srt-voiceover revoice video.mp4 -o output.mp3 --use-pyannote
 ```
 
 ### Timing Tolerance
@@ -318,32 +340,6 @@ srt-voiceover input.srt -o output.mp3 -c config.yaml --tolerance 500
 | **Voice count** | 70+ | 50+ | 120+ | 100+ |
 | **Open source** | ✅ | ❌ | ❌ | ❌ |
 
-## 🚀 Publishing to GitHub
-
-```bash
-# Initialize git
-git init
-git add .
-git commit -m "Initial commit: Complete dubbing pipeline with transcription"
-
-# Connect to your repo
-git remote add origin https://github.com/leakydata/srt-voiceover.git
-git branch -M main
-
-# Pull the LICENSE file
-git pull origin main --allow-unrelated-histories
-
-# Push to GitHub
-git push -u origin main
-```
-
-After pushing, users can install directly from GitHub:
-```bash
-pip install git+https://github.com/leakydata/srt-voiceover.git
-
-# With transcription support
-pip install "git+https://github.com/leakydata/srt-voiceover.git#egg=srt-voiceover[transcription]"
-```
 
 ## 🤝 Contributing
 
@@ -353,16 +349,10 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Built with [Microsoft Edge TTS](https://github.com/rany2/edge-tts)
-- Inspired by the need for an open-source alternative to expensive dubbing services
-- Special thanks to [OpenAI-EdgeTTS](https://github.com/travisvn/openai-edge-tts) for the API server
-
 ## ❓ FAQ
 
-### Do I need the localhost:5050 server for transcription?
-**No!** Transcription runs locally using openai-whisper. The server is only needed for voiceover generation.
+### Do I need any servers running?
+**No!** Everything runs locally. The tool uses the `edge-tts` Python module directly for text-to-speech, and `openai-whisper` for transcription. No external servers or API keys needed (except HuggingFace token for optional pyannote).
 
 ### Which Whisper model should I use?
 - **tiny/base**: Fast, good for testing or lower-end hardware
@@ -376,7 +366,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 With local Whisper (default), your audio never leaves your machine. Only the final voiceover generation uses the Edge TTS server.
 
 ### Can I use this commercially?
-Yes, MIT license. But check the licenses of Edge TTS and Whisper for your use case.
+Yes, MIT license. However, please check the Microsoft Edge TTS terms of service and the licenses of dependencies (Whisper, pyannote) for your specific use case.
+
+### How do I get a HuggingFace token for pyannote?
+1. Create a free account at [huggingface.co](https://huggingface.co/)
+2. Go to [Settings → Tokens](https://huggingface.co/settings/tokens)
+3. Create a new token with "Read" access
+4. Accept the model license at [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+5. Set as environment variable: `HF_TOKEN=your_token_here`
+
+Or the tool will prompt you interactively when first used!
 
 ## 📧 Support
 
@@ -414,10 +413,10 @@ for audio_file in Path("./episodes").glob("*.mp3"):
     audio_to_voiceover_workflow(
         input_audio=str(audio_file),
         output_audio=f"./output/{audio_file.name}",
-        edge_tts_url="http://localhost:5050/v1/audio/speech",
-        edge_tts_api_key="your_key",
         speaker_voices={"Speaker A": "en-US-AndrewMultilingualNeural"},
-        whisper_model="base"
+        default_voice="en-US-AndrewMultilingualNeural",
+        whisper_model="base",
+        verbose=False
     )
 ```
 
@@ -426,14 +425,28 @@ for audio_file in Path("./episodes").glob("*.mp3"):
 - [x] Audio transcription to SRT (v0.2.0)
 - [x] Complete re-voicing workflow (v0.2.0)
 - [x] Video audio extraction (v0.2.0)
+- [x] Professional speaker diarization with pyannote (v0.3.0)
+- [x] Direct edge-tts module integration (v0.3.0)
 - [ ] Publish to PyPI
-- [ ] Advanced speaker diarization (pyannote.audio integration)
 - [ ] Add web UI
 - [ ] Support for more TTS engines (Google Cloud TTS, AWS Polly)
 - [ ] Batch processing mode with parallel processing
 - [ ] Voice emotion/style control
 - [ ] Background music mixing
 - [ ] Direct video output (merge with video file automatically)
+
+## 🙏 Acknowledgments
+
+This project is built on the shoulders of amazing open-source tools:
+
+- **[edge-tts](https://github.com/rany2/edge-tts)** - Python interface to Microsoft Edge's TTS service (MIT License)
+- **[openai-whisper](https://github.com/openai/whisper)** - Robust speech recognition by OpenAI (MIT License)
+- **[pyannote-audio](https://github.com/pyannote/pyannote-audio)** - State-of-the-art speaker diarization (MIT License)
+- **[pydub](https://github.com/jiaaro/pydub)** - Audio manipulation made easy (MIT License)
+- **[pysrt](https://github.com/byroot/pysrt)** - SRT file parsing (GPL-3.0 License)
+- **[FFmpeg](https://ffmpeg.org/)** - The backbone of audio/video processing (LGPL/GPL)
+
+Special thanks to the creators and maintainers of these projects! 🎉
 
 ---
 

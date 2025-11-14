@@ -21,6 +21,12 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+try:
+    from pyannote.audio import Pipeline
+    PYANNOTE_AVAILABLE = True
+except ImportError:
+    PYANNOTE_AVAILABLE = False
+
 
 def transcribe_audio_to_srt(
     audio_path: str,
@@ -33,6 +39,8 @@ def transcribe_audio_to_srt(
     use_api: bool = False,
     api_url: Optional[str] = None,
     api_key: Optional[str] = None,
+    # Professional diarization (optional - requires pyannote.audio)
+    use_pyannote: bool = False,
 ) -> str:
     """
     Transcribe audio file to SRT format with timestamps using OpenAI Whisper.
@@ -52,6 +60,8 @@ def transcribe_audio_to_srt(
         use_api: If True, use API mode instead of local Whisper
         api_url: API endpoint URL (for API mode)
         api_key: API key (for API mode)
+        use_pyannote: Use pyannote.audio for professional speaker diarization (default: False)
+                      Requires HF_TOKEN environment variable to be set
         
     Returns:
         Path to created SRT file
@@ -103,6 +113,11 @@ def transcribe_audio_to_srt(
             'text': result.get('text', '')
         }]
     
+    # Get speaker diarization if using pyannote
+    speaker_map = {}
+    if use_pyannote:
+        speaker_map = _get_pyannote_speakers(audio_path, verbose)
+    
     for i, segment in enumerate(segments):
         start_time = segment.get('start', 0)
         end_time = segment.get('end', start_time + 5)
@@ -116,7 +131,13 @@ def transcribe_audio_to_srt(
         end = _seconds_to_srt_time(end_time)
         
         # Add speaker detection if enabled
-        if enable_speaker_detection:
+        if use_pyannote and speaker_map:
+            # Use pyannote speaker for this time segment
+            speaker = _get_speaker_at_time(speaker_map, start_time, end_time)
+            if speaker:
+                text = f"{speaker}: {text}"
+        elif enable_speaker_detection:
+            # Use basic heuristic
             speaker = _detect_speaker_heuristic(text, i)
             if speaker:
                 text = f"{speaker}: {text}"
@@ -290,6 +311,117 @@ def _detect_speaker_heuristic(text: str, segment_index: int) -> Optional[str]:
     return "Speaker A" if segment_index % 2 == 0 else "Speaker B"
 
 
+def _get_pyannote_speakers(audio_path: str, verbose: bool = True) -> Dict:
+    """
+    Use pyannote.audio for professional speaker diarization.
+    
+    Args:
+        audio_path: Path to audio file
+        verbose: Print progress messages
+        
+    Returns:
+        Dictionary mapping time ranges to speaker labels
+        
+    Note:
+        Requires HF_TOKEN environment variable to be set with a valid
+        HuggingFace token that has access to pyannote models.
+    """
+    if not PYANNOTE_AVAILABLE:
+        raise ImportError(
+            "pyannote.audio not installed. Install it with:\n"
+            "pip install pyannote.audio\n\n"
+            "Also requires HuggingFace token with access to pyannote models:\n"
+            "https://huggingface.co/pyannote/speaker-diarization"
+        )
+    
+    # Get token from environment
+    import os
+    if not hf_token:
+        hf_token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_TOKEN')
+    
+    if not hf_token:
+        raise ValueError(
+            "HuggingFace token required for pyannote speaker diarization.\n\n"
+            "Set the HF_TOKEN environment variable:\n"
+            "  Windows (PowerShell): $env:HF_TOKEN = \"hf_your_token_here\"\n"
+            "  Windows (cmd):        set HF_TOKEN=hf_your_token_here\n"
+            "  Linux/Mac:            export HF_TOKEN=hf_your_token_here\n\n"
+            "Get your token at: https://huggingface.co/settings/tokens\n"
+            "Accept license at: https://huggingface.co/pyannote/speaker-diarization-3.1"
+        )
+    
+    if verbose:
+        print("Loading pyannote speaker diarization pipeline...")
+        print("(This may take a minute on first run)")
+    
+    try:
+        # Load the pipeline
+        pipeline = Pipeline.from_pretrained(
+            "pyannote/speaker-diarization-3.1",
+            use_auth_token=hf_token
+        )
+        
+        # Run diarization
+        if verbose:
+            print("Running speaker diarization... (this may take a while on CPU)")
+        
+        diarization = pipeline(audio_path)
+        
+        # Convert to speaker map
+        speaker_map = {}
+        for turn, _, speaker in diarization.itertracks(yield_label=True):
+            speaker_map[(turn.start, turn.end)] = speaker
+        
+        if verbose:
+            unique_speakers = len(set(speaker_map.values()))
+            print(f"[OK] Detected {unique_speakers} speaker(s)")
+        
+        return speaker_map
+        
+    except Exception as e:
+        if "401" in str(e) or "authentication" in str(e).lower():
+            raise ValueError(
+                f"Authentication failed with HuggingFace.\n"
+                f"Make sure you have:\n"
+                f"1. Valid HF token\n"
+                f"2. Accepted model license at: https://huggingface.co/pyannote/speaker-diarization-3.1\n"
+                f"Error: {e}"
+            )
+        raise
+
+
+def _get_speaker_at_time(speaker_map: Dict, start_time: float, end_time: float) -> Optional[str]:
+    """
+    Get the speaker for a given time segment.
+    
+    Args:
+        speaker_map: Dictionary from _get_pyannote_speakers
+        start_time: Segment start time in seconds
+        end_time: Segment end time in seconds
+        
+    Returns:
+        Speaker label (e.g., "SPEAKER_00") or None
+    """
+    # Find which speaker has the most overlap with this segment
+    mid_time = (start_time + end_time) / 2
+    
+    for (seg_start, seg_end), speaker in speaker_map.items():
+        if seg_start <= mid_time <= seg_end:
+            return speaker
+    
+    # If no exact match, find closest
+    closest_speaker = None
+    min_distance = float('inf')
+    
+    for (seg_start, seg_end), speaker in speaker_map.items():
+        distance = min(abs(start_time - seg_start), abs(end_time - seg_end))
+        if distance < min_distance:
+            min_distance = distance
+            closest_speaker = speaker
+    
+    return closest_speaker
+
+
 def convert_audio_format(
     input_path: str,
     output_path: Optional[str] = None,
@@ -396,6 +528,8 @@ def audio_to_voiceover_workflow(
     whisper_api_url: Optional[str] = None,
     whisper_api_key: Optional[str] = None,
     enable_speaker_detection: bool = False,
+    # Professional diarization (optional - requires HF_TOKEN env var)
+    use_pyannote: bool = False,
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
@@ -443,6 +577,8 @@ def audio_to_voiceover_workflow(
         use_api=use_whisper_api,
         api_url=whisper_api_url,
         api_key=whisper_api_key,
+        use_pyannote=use_pyannote,
+        hf_token=hf_token,
     )
     
     if verbose:

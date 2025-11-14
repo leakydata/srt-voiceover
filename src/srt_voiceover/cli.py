@@ -135,7 +135,9 @@ Examples:
     transcribe_parser.add_argument('--language', help='Language code (en, es, fr, etc.)')
     transcribe_parser.add_argument('--model', default='whisper-1', help='Whisper model name')
     transcribe_parser.add_argument('--multi-speaker', action='store_true', 
-                                    help='Enable multi-speaker detection (default: single speaker)')
+                                    help='Enable basic multi-speaker detection (default: single speaker)')
+    transcribe_parser.add_argument('--use-pyannote', action='store_true',
+                                    help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
@@ -150,7 +152,9 @@ Examples:
     revoice_parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%")')
     revoice_parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz")')
     revoice_parser.add_argument('--multi-speaker', action='store_true',
-                                 help='Enable multi-speaker detection (default: single speaker)')
+                                 help='Enable basic multi-speaker detection (default: single speaker)')
+    revoice_parser.add_argument('--use-pyannote', action='store_true',
+                                 help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -273,6 +277,7 @@ def handle_transcribe_command(args):
             use_api=use_api or (api_url is not None),
             api_url=api_url,
             api_key=api_key,
+            use_pyannote=args.use_pyannote,
         )
         print(f"[OK] Transcription complete: {output_path}")
     except ImportError as e:
@@ -298,6 +303,9 @@ def handle_revoice_command(args):
     whisper_api_url = args.whisper_url or config.get('whisper_api_url')
     whisper_api_key = args.api_key or config.get('whisper_api_key')
     whisper_model = config.get('whisper_model', 'base')
+    
+    # Get pyannote setting from config or CLI
+    use_pyannote = args.use_pyannote or config.get('use_pyannote', False)
     
     # TTS settings
     language = args.language or config.get('language')
@@ -352,6 +360,7 @@ def handle_revoice_command(args):
             whisper_api_url=whisper_api_url,
             whisper_api_key=whisper_api_key,
             enable_speaker_detection=args.multi_speaker,
+            use_pyannote=use_pyannote,
         )
         
         # Clean up temp files

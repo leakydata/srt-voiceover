@@ -5,3 +5,7 @@ edge-tts>=6.1.0
 
 # Optional: for transcription feature
 openai-whisper>=20231117  # Install with: pip install openai-whisper
+
+# Optional: for professional speaker diarization
+# pyannote.audio>=3.1.0  # Install with: pip install pyannote.audio
+# Note: Requires HuggingFace token with access to pyannote models

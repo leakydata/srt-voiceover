@@ -40,6 +40,13 @@ dependencies = [
 transcription = [
     "openai-whisper>=20231117",
 ]
+diarization = [
+    "pyannote.audio>=3.1.0",
+]
+all = [
+    "openai-whisper>=20231117",
+    "pyannote.audio>=3.1.0",
+]
 
 dev = [
     "pytest>=7.0",
