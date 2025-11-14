@@ -158,20 +158,21 @@ Examples:
     extract_parser.add_argument('--format', choices=['mp3', 'wav'], default='wav', help='Output audio format')
     extract_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
-    # Parse args - but handle special case where first arg is a file (default voiceover command)
-    args, unknown = parser.parse_known_args()
+    # Check if first arg is a subcommand or looks like a file
+    if len(sys.argv) > 1:
+        first_arg = sys.argv[1]
+        # If first arg is not a known command and not a flag, assume it's voiceover command
+        if not first_arg.startswith('-') and first_arg not in ['voiceover', 'transcribe', 'revoice', 'extract-audio']:
+            # Insert 'voiceover' command
+            sys.argv.insert(1, 'voiceover')
+    
+    args = parser.parse_args()
     
     # Handle --init-config
     if args.init_config:
         format_type = 'json' if args.init_config.endswith('.json') else 'yaml'
         create_sample_config(args.init_config, format_type)
         return
-    
-    # If no command specified and unknown args exist, assume it's the voiceover command
-    if not args.command and unknown:
-        # Re-parse with voiceover subcommand prepended
-        sys.argv.insert(1, 'voiceover')
-        args = parser.parse_args()
     
     # Route to appropriate command handler
     if args.command == 'transcribe':
