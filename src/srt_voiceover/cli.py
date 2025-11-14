@@ -134,7 +134,8 @@ Examples:
     transcribe_parser.add_argument('--api-key', help='API key for authentication')
     transcribe_parser.add_argument('--language', help='Language code (en, es, fr, etc.)')
     transcribe_parser.add_argument('--model', default='whisper-1', help='Whisper model name')
-    transcribe_parser.add_argument('--no-speaker-detection', action='store_true', help='Disable speaker detection')
+    transcribe_parser.add_argument('--multi-speaker', action='store_true', 
+                                    help='Enable multi-speaker detection (default: single speaker)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
@@ -148,6 +149,8 @@ Examples:
     revoice_parser.add_argument('--rate', help='Speech rate (e.g., "+0%%", "-50%%")')
     revoice_parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%")')
     revoice_parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz")')
+    revoice_parser.add_argument('--multi-speaker', action='store_true',
+                                 help='Enable multi-speaker detection (default: single speaker)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -265,7 +268,7 @@ def handle_transcribe_command(args):
             output_srt_path=output_path,
             model=model,
             language=language,
-            enable_speaker_detection=not args.no_speaker_detection,
+            enable_speaker_detection=args.multi_speaker,
             verbose=not args.quiet,
             use_api=use_api or (api_url is not None),
             api_url=api_url,
@@ -348,7 +351,7 @@ def handle_revoice_command(args):
             use_whisper_api=use_whisper_api or (whisper_api_url is not None),
             whisper_api_url=whisper_api_url,
             whisper_api_key=whisper_api_key,
-            detect_speakers=args.multi_speaker,
+            enable_speaker_detection=args.multi_speaker,
         )
         
         # Clean up temp files
