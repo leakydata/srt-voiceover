@@ -1,0 +1,34 @@
+# Example configuration for srt-voiceover
+# Copy this file and customize for your needs
+
+# Edge TTS API endpoint
+edge_tts_url: "http://localhost:5050/v1/audio/speech"
+
+# API key for authentication
+api_key: "your_api_key_here"
+
+# Default voice for speakers without specific assignment
+default_voice: "en-US-AndrewMultilingualNeural"
+
+# Output audio format (mp3 or wav)
+response_format: "mp3"
+
+# Speech speed multiplier (1.0 = normal, 0.5 = half speed, 2.0 = double speed)
+speed: 1.0
+
+# Timing tolerance in milliseconds for audio alignment
+# Audio within this tolerance of target duration won't be adjusted
+timing_tolerance_ms: 150
+
+# Map speaker names to specific voices
+# Add entries for each speaker in your SRT files
+speaker_voices:
+  Nathan: "en-US-AndrewMultilingualNeural"
+  Nicole: "en-US-EmmaMultilingualNeural"
+  John: "en-US-GuyNeural"
+  Sarah: "en-US-JennyNeural"
+  Mike: "en-US-BrianNeural"
+  Emma: "en-US-AriaNeural"
+  
+# See edgetts_voices_list.md for complete list of available voices
+

@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific - generated audio files
+*.mp3
+*.wav
+# Don't ignore example SRT files
+!examples/*.srt
+# Ignore all other SRT files
+*.srt
+logs/
+*.log
+
+# User config files (keep examples)
+config.yaml
+config.yml
+config.json
+!examples/config.*
+
+# API Keys - IMPORTANT: Never commit API keys!
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Keep the old script for reference but rename it
+srt_to_edgtts_voiceover_old.py
+
