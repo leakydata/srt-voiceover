@@ -311,9 +311,30 @@ def handle_revoice_command(args):
         print(f"Error: Input file not found: {args.input}")
         sys.exit(1)
     
+    # Check if input is a video file - if so, extract audio first
+    input_file = Path(args.input)
+    video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm']
+    
+    if input_file.suffix.lower() in video_extensions:
+        print(f"Detected video file. Extracting audio first...")
+        temp_audio = f"temp_extracted_audio_{input_file.stem}.wav"
+        try:
+            extract_audio_from_video(
+                video_path=args.input,
+                output_audio_path=temp_audio,
+                audio_format='wav',
+                verbose=not args.quiet
+            )
+            audio_input = temp_audio
+        except Exception as e:
+            print(f"Error extracting audio from video: {e}")
+            sys.exit(1)
+    else:
+        audio_input = args.input
+    
     try:
         srt_path, audio_path = audio_to_voiceover_workflow(
-            input_audio=args.input,
+            input_audio=audio_input,
             output_audio=output_path,
             speaker_voices=speaker_voices,
             default_voice=default_voice,
@@ -329,14 +350,29 @@ def handle_revoice_command(args):
             whisper_api_key=whisper_api_key,
         )
         
-        # Clean up temp SRT if not keeping it
+        # Clean up temp files
         if not args.keep_srt and srt_path == "temp_transcription.srt":
             try:
                 Path(srt_path).unlink()
             except:
                 pass
         
+        # Clean up temp extracted audio if we extracted it
+        if input_file.suffix.lower() in video_extensions:
+            try:
+                Path(audio_input).unlink()
+                if not args.quiet:
+                    print(f"Cleaned up temporary audio file")
+            except:
+                pass
+        
         print(f"\n[OK] Re-voicing complete: {audio_path}")
+        
+        # If input was video, offer to merge back
+        if input_file.suffix.lower() in video_extensions and not args.quiet:
+            output_video = output_path.replace('.mp3', '_dubbed.mp4').replace('.wav', '_dubbed.mp4')
+            print(f"\nTo merge with original video, run:")
+            print(f'  ffmpeg -i "{args.input}" -i "{audio_path}" -c:v copy -map 0:v:0 -map 1:a:0 "{output_video}"')
     except ImportError as e:
         print(f"\n❌ {e}")
         print("\nTo use re-voicing features, install:")
