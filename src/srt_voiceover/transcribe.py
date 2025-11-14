@@ -93,7 +93,7 @@ def transcribe_audio_to_srt(
                 "pip install openai-whisper\n\n"
                 "Or use API mode with use_api=True if you have access to OpenAI API"
             )
-        result = _transcribe_local(audio_path, model, language, verbose)
+        result = _transcribe_local(audio_path, model, language, verbose, device)
     
     if verbose:
         print(f"[OK] Transcription complete!")
@@ -162,16 +162,17 @@ def transcribe_audio_to_srt(
     return output_srt_path
 
 
-def _transcribe_local(audio_path: str, model: str, language: Optional[str], verbose: bool) -> Dict:
+def _transcribe_local(audio_path: str, model: str, language: Optional[str], verbose: bool, device: str = "cpu") -> Dict:
     """Transcribe using local Whisper model."""
     if verbose:
         print(f"Loading Whisper model '{model}'... (first run will download the model)")
     
     # Load model
-    whisper_model = whisper.load_model(model)
+    whisper_model = whisper.load_model(model, device=device)
     
     if verbose:
-        print(f"Transcribing audio... (this may take a while)")
+        device_msg = f"on {device.upper()}" if device == "cuda" else "on CPU"
+        print(f"Transcribing audio {device_msg}... (this may take a while)")
     
     # Transcribe
     transcribe_options = {}
