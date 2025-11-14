@@ -354,20 +354,25 @@ def _get_pyannote_speakers(audio_path: str, device: str = "cpu", verbose: bool =
         )
     
     if verbose:
-        print("Loading pyannote speaker diarization pipeline...")
+        device_msg = f" on {device.upper()}" if device == "cuda" else " on CPU"
+        print(f"Loading pyannote speaker diarization pipeline{device_msg}...")
         print("(This may take a minute on first run)")
     
     try:
         # Load the pipeline
+        import torch
         pipeline = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
             use_auth_token=hf_token
         )
         
-    # Run diarization
-    if verbose:
-        device_msg = "This will be faster on GPU" if device == "cpu" else "Using GPU acceleration"
-        print(f"Running speaker diarization... ({device_msg})")
+        # Move to device (GPU or CPU)
+        pipeline.to(torch.device(device))
+        
+        # Run diarization
+        if verbose:
+            device_msg = "This will be faster on GPU" if device == "cpu" else "Using GPU acceleration"
+            print(f"Running speaker diarization... ({device_msg})")
         
         diarization = pipeline(audio_path)
         

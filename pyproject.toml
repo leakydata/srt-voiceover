@@ -77,9 +77,6 @@ dev = [
     "flake8>=5.0",
     "mypy>=0.990",
 ]
-all = [
-    "openai-whisper>=20231117",
-]
 
 [project.urls]
 Homepage = "https://github.com/leakydata/srt-voiceover"
