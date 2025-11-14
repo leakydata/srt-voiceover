@@ -108,6 +108,7 @@ Examples:
     
     # Global options
     parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
+    parser.add_argument('--list-voices', action='store_true', help='List all available Edge TTS voices')
     parser.add_argument('--version', action='version', version=f'srt-voiceover {__version__}')
     
     # Subcommands
@@ -179,6 +180,11 @@ Examples:
     if args.init_config:
         format_type = 'json' if args.init_config.endswith('.json') else 'yaml'
         create_sample_config(args.init_config, format_type)
+        return
+    
+    # Handle --list-voices
+    if args.list_voices:
+        list_available_voices()
         return
     
     # Route to appropriate command handler
