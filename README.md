@@ -54,17 +54,23 @@ pip install -e .
    - Mac: `brew install ffmpeg`
    - Linux: `sudo apt-get install ffmpeg`
 
-2. **Edge TTS & Whisper API Server** - You need a local OpenAI-compatible server
-   - Clone and run: [OpenAI-EdgeTTS](https://github.com/travisvn/openai-edge-tts) (supports both TTS and Whisper)
+2. **Edge TTS Server** - For voiceover generation (text-to-speech)
+   - Clone and run: [OpenAI-EdgeTTS](https://github.com/travisvn/openai-edge-tts)
    ```bash
    git clone https://github.com/travisvn/openai-edge-tts.git
    cd openai-edge-tts
    npm install
    npm start
    ```
-   This provides both endpoints:
-   - TTS: `http://localhost:5050/v1/audio/speech`
-   - Whisper: `http://localhost:5050/v1/audio/transcriptions`
+   Provides endpoint: `http://localhost:5050/v1/audio/speech`
+
+3. **OpenAI Whisper** (Optional) - For audio transcription features
+   ```bash
+   pip install openai-whisper
+   # Or install srt-voiceover with transcription support
+   pip install srt-voiceover[transcription]
+   ```
+   Transcription runs **locally** on your machine (no server needed!)
 
 ### Basic Usage
 
@@ -198,30 +204,38 @@ srt_path, audio_path = audio_to_voiceover_workflow(
 Create a `config.yaml` file:
 
 ```yaml
-# Edge TTS API endpoint
+# ===================================
+# Edge TTS (Text-to-Speech) - REQUIRED
+# ===================================
 edge_tts_url: "http://localhost:5050/v1/audio/speech"
-
-# API key for authentication
 api_key: "your_api_key_here"
 
-# Default voice for speakers without specific assignment
+# ===================================
+# Whisper Transcription - OPTIONAL
+# ===================================
+# Uses LOCAL whisper by default (pip install openai-whisper)
+whisper_model: "base"  # tiny, base, small, medium, large
+use_whisper_api: false  # Only set true for OpenAI API
+
+# Optional: OpenAI API mode
+# use_whisper_api: true
+# whisper_api_url: "https://api.openai.com/v1/audio/transcriptions"
+# whisper_api_key: "sk-your-openai-key"
+
+# ===================================
+# Voice Settings
+# ===================================
 default_voice: "en-US-AndrewMultilingualNeural"
-
-# Output format (mp3 or wav)
 response_format: "mp3"
-
-# Speech speed (1.0 = normal, 0.5 = half, 2.0 = double)
 speed: 1.0
-
-# Timing tolerance in milliseconds
 timing_tolerance_ms: 150
 
 # Map speaker names to voices
 speaker_voices:
   Nathan: "en-US-AndrewMultilingualNeural"
   Nicole: "en-US-EmmaMultilingualNeural"
-  John: "en-US-GuyNeural"
-  Sarah: "en-US-JennyNeural"
+  Speaker A: "en-US-GuyNeural"  # Auto-detected speakers
+  Speaker B: "en-US-JennyNeural"
 ```
 
 Or use JSON format:
@@ -304,15 +318,36 @@ srt-voiceover input.srt -o output.mp3 -c config.yaml --tolerance 500
 | **Voice count** | 70+ | 50+ | 120+ | 100+ |
 | **Open source** | ✅ | ❌ | ❌ | ❌ |
 
+## 🚀 Publishing to GitHub
+
+```bash
+# Initialize git
+git init
+git add .
+git commit -m "Initial commit: Complete dubbing pipeline with transcription"
+
+# Connect to your repo
+git remote add origin https://github.com/leakydata/srt-voiceover.git
+git branch -M main
+
+# Pull the LICENSE file
+git pull origin main --allow-unrelated-histories
+
+# Push to GitHub
+git push -u origin main
+```
+
+After pushing, users can install directly from GitHub:
+```bash
+pip install git+https://github.com/leakydata/srt-voiceover.git
+
+# With transcription support
+pip install "git+https://github.com/leakydata/srt-voiceover.git#egg=srt-voiceover[transcription]"
+```
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📝 License
 
@@ -324,19 +359,67 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Inspired by the need for an open-source alternative to expensive dubbing services
 - Special thanks to [OpenAI-EdgeTTS](https://github.com/travisvn/openai-edge-tts) for the API server
 
+## ❓ FAQ
+
+### Do I need the localhost:5050 server for transcription?
+**No!** Transcription runs locally using openai-whisper. The server is only needed for voiceover generation.
+
+### Which Whisper model should I use?
+- **tiny/base**: Fast, good for testing or lower-end hardware
+- **small**: Good balance of speed and accuracy
+- **medium/large**: Best quality, needs more RAM and time
+
+### Can I use this without installing Whisper?
+**Yes!** If you only need SRT → voiceover conversion, you don't need Whisper at all.
+
+### Is my audio sent to any servers?
+With local Whisper (default), your audio never leaves your machine. Only the final voiceover generation uses the Edge TTS server.
+
+### Can I use this commercially?
+Yes, MIT license. But check the licenses of Edge TTS and Whisper for your use case.
+
 ## 📧 Support
 
+- **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
 - **Issues**: [GitHub Issues](https://github.com/leakydata/srt-voiceover/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/leakydata/srt-voiceover/discussions)
 
-## 🔄 Complete Workflows
+## 🔄 Common Workflows
 
-For detailed workflow examples and real-world use cases, see [WORKFLOWS.md](WORKFLOWS.md):
-- Video dubbing pipeline
-- Podcast re-voicing
-- Multi-language content creation
-- Batch processing
-- A/B testing with different voices
+### Video Dubbing
+```bash
+# 1. Extract audio from video
+srt-voiceover extract-audio video.mp4 -o audio.wav
+
+# 2. Transcribe and re-voice in one step
+srt-voiceover revoice audio.wav -o new_audio.mp3 --keep-srt -c config.yaml
+
+# 3. Merge back with video using ffmpeg
+ffmpeg -i video.mp4 -i new_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 output.mp4
+```
+
+### Podcast Re-voicing
+```bash
+# Create different voice versions
+srt-voiceover revoice podcast.mp3 -o version_a.mp3 -c config_formal.yaml
+srt-voiceover revoice podcast.mp3 -o version_b.mp3 -c config_casual.yaml
+```
+
+### Batch Processing (Python)
+```python
+from srt_voiceover import audio_to_voiceover_workflow
+from pathlib import Path
+
+for audio_file in Path("./episodes").glob("*.mp3"):
+    audio_to_voiceover_workflow(
+        input_audio=str(audio_file),
+        output_audio=f"./output/{audio_file.name}",
+        edge_tts_url="http://localhost:5050/v1/audio/speech",
+        edge_tts_api_key="your_key",
+        speaker_voices={"Speaker A": "en-US-AndrewMultilingualNeural"},
+        whisper_model="base"
+    )
+```
 
 ## 🗺️ Roadmap
 

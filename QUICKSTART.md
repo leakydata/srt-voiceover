@@ -1,6 +1,8 @@
-# Quick Start Guide
+# ⚡ Quick Start Guide
 
 Get up and running with srt-voiceover in 5 minutes!
+
+> **Note**: This guide covers BOTH voiceover generation AND transcription features.
 
 ## Step 1: Install Prerequisites
 
@@ -41,15 +43,16 @@ The server will run on `http://localhost:5050`
 ## Step 2: Install srt-voiceover
 
 ```bash
-# Install from source
+# Option 1: From GitHub (current)
 git clone https://github.com/leakydata/srt-voiceover.git
 cd srt-voiceover
 pip install -e .
-```
 
-Or once published to PyPI:
-```bash
-pip install srt-voiceover
+# Option 2: With transcription support
+pip install -e .[transcription]  # Includes openai-whisper
+
+# Option 3: Once published to PyPI
+pip install srt-voiceover[transcription]
 ```
 
 ## Step 3: Create Configuration
@@ -92,13 +95,28 @@ Nicole: Let's get started with the basics.
 Nathan: First, we'll cover installation.
 ```
 
-## Step 5: Generate Voiceover
+## Step 5: Use srt-voiceover
 
+### Option A: SRT to Voiceover
 ```bash
 srt-voiceover example.srt -o output.mp3 --config config.yaml
 ```
 
-That's it! Your voiceover will be saved as `output.mp3`
+### Option B: Audio to SRT (Transcription)
+```bash
+# First time: install Whisper
+pip install openai-whisper
+
+# Transcribe
+srt-voiceover transcribe audio.mp3 -o subtitles.srt --config config.yaml
+```
+
+### Option C: Complete Workflow (Audio → Transcribe → Re-voice)
+```bash
+srt-voiceover revoice original.mp3 -o new_voice.mp3 --config config.yaml
+```
+
+That's it! 🎉
 
 ## Troubleshooting
 
@@ -127,22 +145,37 @@ That's it! Your voiceover will be saved as `output.mp3`
 
 ## Common Use Cases
 
-### Video Dubbing
+### 🎬 Video Dubbing
 ```bash
-srt-voiceover video_subs.srt -o dubbed_audio.mp3 -c config.yaml
-# Then merge with video using video editing software
+# Extract audio, transcribe, and re-voice
+srt-voiceover extract-audio video.mp4 -o audio.wav
+srt-voiceover revoice audio.wav -o new_audio.mp3 --keep-srt -c config.yaml
+
+# Merge with ffmpeg
+ffmpeg -i video.mp4 -i new_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 output.mp4
 ```
 
-### Podcast Creation
+### 🎙️ Podcast Re-voicing
 ```bash
-srt-voiceover script.srt -o podcast.mp3 -c config.yaml --speed 0.95
+srt-voiceover revoice podcast.mp3 -o ai_version.mp3 -c config.yaml
 ```
 
-### Quick Test
+### 📝 Generate Subtitles
 ```bash
-# Use the included sample
+srt-voiceover transcribe video_audio.mp3 -o subtitles.srt
+```
+
+### ⚡ Quick Test
+```bash
 srt-voiceover examples/sample.srt -o test.mp3 -c examples/config.yaml
 ```
 
-Need help? Open an issue on [GitHub](https://github.com/leakydata/srt-voiceover/issues)!
+---
+
+**Next Steps:**
+- 📖 Read the full [README.md](README.md) for detailed documentation
+- 🤝 Check [CONTRIBUTING.md](CONTRIBUTING.md) to contribute
+- 🐛 Report issues on [GitHub](https://github.com/leakydata/srt-voiceover/issues)
+
+**Happy dubbing!** 🎉
 
