@@ -68,11 +68,22 @@ pip install -e .
    pip install pyannote.audio
    # Or install with diarization support
    pip install srt-voiceover[diarization]
-   
-   # Requires HuggingFace token (you'll be prompted when first used)
-   # Get token at: https://huggingface.co/settings/tokens
-   # Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
    ```
+   
+   **Setup HuggingFace Token:**
+   - Get token at: https://huggingface.co/settings/tokens
+   - Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
+   - Set environment variable:
+     ```bash
+     # Windows PowerShell (permanent):
+     [System.Environment]::SetEnvironmentVariable('HF_TOKEN', 'hf_your_token_here', 'User')
+     
+     # Windows CMD:
+     setx HF_TOKEN "hf_your_token_here"
+     
+     # Linux/Mac (add to ~/.bashrc or ~/.zshrc):
+     export HF_TOKEN=hf_your_token_here
+     ```
 
 ### Basic Usage
 
@@ -368,14 +379,13 @@ With local Whisper (default), your audio never leaves your machine. Only the fin
 ### Can I use this commercially?
 Yes, MIT license. However, please check the Microsoft Edge TTS terms of service and the licenses of dependencies (Whisper, pyannote) for your specific use case.
 
-### How do I get a HuggingFace token for pyannote?
-1. Create a free account at [huggingface.co](https://huggingface.co/)
-2. Go to [Settings → Tokens](https://huggingface.co/settings/tokens)
-3. Create a new token with "Read" access
-4. Accept the model license at [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
-5. Set as environment variable: `HF_TOKEN=your_token_here`
-
-Or the tool will prompt you interactively when first used!
+### How do I set up pyannote speaker diarization?
+1. Install: `pip install pyannote.audio`
+2. Create free account at [huggingface.co](https://huggingface.co/)
+3. Get token at [Settings → Tokens](https://huggingface.co/settings/tokens) (Read access)
+4. Accept license at [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+5. Set `HF_TOKEN` environment variable (see Prerequisites section above)
+6. Use with `--use-pyannote` flag
 
 ## 📧 Support
 

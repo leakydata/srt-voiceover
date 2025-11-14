@@ -336,8 +336,7 @@ def _get_pyannote_speakers(audio_path: str, verbose: bool = True) -> Dict:
     
     # Get token from environment
     import os
-    if not hf_token:
-        hf_token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_TOKEN')
+    hf_token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_TOKEN')
     
     if not hf_token:
         raise ValueError(
@@ -578,7 +577,6 @@ def audio_to_voiceover_workflow(
         api_url=whisper_api_url,
         api_key=whisper_api_key,
         use_pyannote=use_pyannote,
-        hf_token=hf_token,
     )
     
     if verbose:

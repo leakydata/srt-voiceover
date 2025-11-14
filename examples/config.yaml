@@ -29,14 +29,13 @@ use_whisper_api: false  # Set to true only if using OpenAI API
 # Pyannote Speaker Diarization - OPTIONAL
 # ===================================
 # For professional-grade speaker detection
-# Requires: pip install pyannote.audio
-# Get token at: https://huggingface.co/settings/tokens
-# Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
+# Requires: 
+#   1. pip install pyannote.audio
+#   2. Set HF_TOKEN environment variable with your HuggingFace token
+#      Get token at: https://huggingface.co/settings/tokens
+#      Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
 
 use_pyannote: false  # Set true to enable professional diarization
-# hf_token: "hf_your_token_here"  # Optional: paste your token here
-
-# If token not set here or in HF_TOKEN env var, you'll be prompted interactively
 
 # ===================================
 # Speaker to Voice Mapping
