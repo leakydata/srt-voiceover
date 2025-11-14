@@ -232,9 +232,13 @@ def handle_transcribe_command(args):
     if args.config:
         config = load_config(args.config)
     
-    whisper_url = args.whisper_url or config.get('whisper_url', 'http://localhost:5050/v1/audio/transcriptions')
-    api_key = args.api_key or config.get('api_key', '')
+    # Check for optional API usage
+    use_api = config.get('use_whisper_api', False)
+    api_url = args.whisper_url or config.get('whisper_api_url')
+    api_key = args.api_key or config.get('whisper_api_key', '')
+    
     language = args.language or config.get('language')
+    model = args.model  # Model name/size
     
     output_path = args.output or "output.srt"
     
@@ -246,14 +250,22 @@ def handle_transcribe_command(args):
         transcribe_audio_to_srt(
             audio_path=args.input,
             output_srt_path=output_path,
-            whisper_url=whisper_url,
-            api_key=api_key,
-            model=args.model,
+            model=model,
             language=language,
             enable_speaker_detection=not args.no_speaker_detection,
             verbose=not args.quiet,
+            use_api=use_api or (api_url is not None),
+            api_url=api_url,
+            api_key=api_key,
         )
         print(f"✓ Transcription complete: {output_path}")
+    except ImportError as e:
+        print(f"\n❌ {e}")
+        print("\nTo use transcription features, install:")
+        print("  pip install openai-whisper")
+        print("\nOr install with transcription support:")
+        print("  pip install srt-voiceover[transcription]")
+        sys.exit(1)
     except Exception as e:
         print(f"Error during transcription: {e}")
         sys.exit(1)
@@ -265,16 +277,23 @@ def handle_revoice_command(args):
     if args.config:
         config = load_config(args.config)
     
-    whisper_url = args.whisper_url or config.get('whisper_url', 'http://localhost:5050/v1/audio/transcriptions')
+    # Transcription settings
+    use_whisper_api = config.get('use_whisper_api', False)
+    whisper_api_url = args.whisper_url or config.get('whisper_api_url')
+    whisper_api_key = args.api_key or config.get('whisper_api_key')
+    whisper_model = config.get('whisper_model', 'base')
+    
+    # TTS settings
     tts_url = args.tts_url or config.get('edge_tts_url')
-    api_key = args.api_key or config.get('api_key', '')
+    tts_api_key = args.api_key or config.get('api_key', '')
+    
     language = args.language or config.get('language')
     speed = args.speed if args.speed is not None else config.get('speed', 1.0)
     speaker_voices = config.get('speaker_voices', {})
     default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
     
     if not tts_url:
-        print("Error: Edge TTS URL is required. Use --tts-url or provide it in config file.")
+        print("Error: Edge TTS URL is required. Use --tts-url or provide edge_tts_url in config file.")
         sys.exit(1)
     
     output_path = args.output or "revoiced.mp3"
@@ -288,15 +307,18 @@ def handle_revoice_command(args):
         srt_path, audio_path = audio_to_voiceover_workflow(
             input_audio=args.input,
             output_audio=output_path,
-            whisper_url=whisper_url,
             edge_tts_url=tts_url,
-            api_key=api_key,
+            edge_tts_api_key=tts_api_key,
             speaker_voices=speaker_voices,
             default_voice=default_voice,
             temp_srt=temp_srt,
             language=language,
             speed=speed,
+            whisper_model=whisper_model,
             verbose=not args.quiet,
+            use_whisper_api=use_whisper_api or (whisper_api_url is not None),
+            whisper_api_url=whisper_api_url,
+            whisper_api_key=whisper_api_key,
         )
         
         # Clean up temp SRT if not keeping it
@@ -307,8 +329,17 @@ def handle_revoice_command(args):
                 pass
         
         print(f"\n✓ Re-voicing complete: {audio_path}")
+    except ImportError as e:
+        print(f"\n❌ {e}")
+        print("\nTo use re-voicing features, install:")
+        print("  pip install openai-whisper")
+        print("\nOr install with all features:")
+        print("  pip install srt-voiceover[all]")
+        sys.exit(1)
     except Exception as e:
         print(f"Error during re-voicing: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

@@ -1,14 +1,24 @@
 # Example configuration for srt-voiceover
 # Copy this file and customize for your needs
 
-# Edge TTS API endpoint (for text-to-speech)
+# ===================================
+# Edge TTS (Text-to-Speech) - REQUIRED for voiceover generation
+# ===================================
 edge_tts_url: "http://localhost:5050/v1/audio/speech"
-
-# Whisper API endpoint (for speech-to-text transcription)
-whisper_url: "http://localhost:5050/v1/audio/transcriptions"
-
-# API key for authentication
 api_key: "your_api_key_here"
+
+# ===================================
+# Whisper Transcription (Speech-to-Text) - OPTIONAL
+# ===================================
+# By default, uses LOCAL whisper (openai-whisper library)
+# No server needed! Just install: pip install openai-whisper
+
+whisper_model: "base"  # Model size: tiny, base, small, medium, large
+use_whisper_api: false  # Set to true only if using OpenAI API or custom server
+
+# Only needed if use_whisper_api is true:
+# whisper_api_url: "https://api.openai.com/v1/audio/transcriptions"
+# whisper_api_key: "sk-your-openai-api-key"
 
 # Default voice for speakers without specific assignment
 default_voice: "en-US-AndrewMultilingualNeural"
