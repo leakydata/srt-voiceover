@@ -84,7 +84,7 @@ def transcribe_audio_to_srt(
         result = _transcribe_local(audio_path, model, language, verbose)
     
     if verbose:
-        print(f"✓ Transcription complete!")
+        print(f"[OK] Transcription complete!")
     
     # Convert to SRT format
     subs = pysrt.SubRipFile()
@@ -133,7 +133,7 @@ def transcribe_audio_to_srt(
     subs.save(output_srt_path, encoding='utf-8')
     
     if verbose:
-        print(f"✓ SRT file saved: {output_srt_path}")
+        print(f"[OK] SRT file saved: {output_srt_path}")
         print(f"   Total segments: {len(subs)}")
     
     return output_srt_path
@@ -332,7 +332,7 @@ def convert_audio_format(
     audio.export(output_path, format=output_format)
     
     if verbose:
-        print(f"✓ Converted audio saved: {output_path}")
+        print(f"[OK] Converted audio saved: {output_path}")
     
     return output_path
 
@@ -370,7 +370,7 @@ def extract_audio_from_video(
         audio.export(output_audio_path, format=audio_format)
         
         if verbose:
-            print(f"✓ Audio extracted: {output_audio_path}")
+            print(f"[OK] Audio extracted: {output_audio_path}")
         
         return output_audio_path
     except Exception as e:

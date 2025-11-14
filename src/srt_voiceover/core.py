@@ -279,5 +279,5 @@ def build_voiceover_from_srt(
     
     final_audio.export(output_audio_path, format=output_format)
     if verbose:
-        print(f"✓ Saved final voiceover to: {output_audio_path}")
+        print(f"[OK] Saved final voiceover to: {output_audio_path}")
 

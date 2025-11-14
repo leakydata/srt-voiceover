@@ -228,7 +228,7 @@ def handle_voiceover_command(args, parser):
             timing_tolerance_ms=timing_tolerance_ms,
             verbose=not args.quiet,
         )
-        print("✓ Conversion complete!")
+        print("[OK] Conversion complete!")
     except ImportError as e:
         print(f"\n❌ {e}")
         print("\nTo use voiceover features, install:")
@@ -271,7 +271,7 @@ def handle_transcribe_command(args):
             api_url=api_url,
             api_key=api_key,
         )
-        print(f"✓ Transcription complete: {output_path}")
+        print(f"[OK] Transcription complete: {output_path}")
     except ImportError as e:
         print(f"\n❌ {e}")
         print("\nTo use transcription features, install:")
@@ -336,7 +336,7 @@ def handle_revoice_command(args):
             except:
                 pass
         
-        print(f"\n✓ Re-voicing complete: {audio_path}")
+        print(f"\n[OK] Re-voicing complete: {audio_path}")
     except ImportError as e:
         print(f"\n❌ {e}")
         print("\nTo use re-voicing features, install:")
@@ -366,7 +366,7 @@ def handle_extract_audio_command(args):
             audio_format=args.format,
             verbose=not args.quiet,
         )
-        print(f"✓ Audio extracted: {output_path}")
+        print(f"[OK] Audio extracted: {output_path}")
     except Exception as e:
         print(f"Error during audio extraction: {e}")
         sys.exit(1)
