@@ -85,6 +85,30 @@ pip install -e .
      export HF_TOKEN=hf_your_token_here
      ```
 
+4. **GPU Acceleration** (Optional) - For faster transcription and diarization
+   
+   **For CUDA-capable GPUs (NVIDIA RTX, etc.):**
+   ```bash
+   # First install PyTorch with CUDA support (adjust cu121 for your CUDA version)
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+   
+   # Then install srt-voiceover with CUDA features
+   pip install srt-voiceover[cuda]
+   
+   # Or install everything with GPU support
+   pip install srt-voiceover[all]  # After installing CUDA PyTorch
+   ```
+   
+   **That's it!** The module will automatically detect and use your GPU. No need to specify `--device cuda` in commands.
+   
+   **For CPU-only systems:**
+   ```bash
+   # Standard installation works fine - automatically uses CPU
+   pip install srt-voiceover[transcription]  # CPU version
+   pip install srt-voiceover[diarization]    # CPU version
+   pip install srt-voiceover[all]            # CPU version (if no CUDA PyTorch)
+   ```
+
 ### Basic Usage
 
 ```bash
@@ -122,28 +146,34 @@ srt-voiceover subtitles.srt -o voiceover.mp3 \
 srt-voiceover input.srt -o output.wav --format wav -c config.yaml
 ```
 
-#### 2. Audio to SRT (NEW! Transcription)
+#### 2. Audio to SRT (Transcription)
 ```bash
-# Transcribe audio file to SRT
+# Transcribe audio file to SRT (single speaker - DEFAULT)
 srt-voiceover transcribe podcast.mp3 -o subtitles.srt --config config.yaml
 
 # Transcribe with language specification
 srt-voiceover transcribe audio.mp3 -o output.srt --language en
 
-# Transcribe without speaker detection
-srt-voiceover transcribe audio.mp3 -o output.srt --no-speaker-detection
+# Transcribe with basic multi-speaker detection
+srt-voiceover transcribe audio.mp3 -o output.srt --multi-speaker
+
+# Transcribe with professional pyannote diarization (auto-uses GPU if available)
+srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote
 ```
 
-#### 3. Complete Re-voicing Workflow (NEW!)
+#### 3. Complete Re-voicing Workflow
 ```bash
-# One command: transcribe + re-voice
+# One command: transcribe + re-voice (single speaker - DEFAULT)
 srt-voiceover revoice original.mp3 -o new_voice.mp3 --config config.yaml
 
 # Keep the generated SRT file
 srt-voiceover revoice original.mp3 -o new_voice.mp3 --keep-srt -c config.yaml
 
-# With custom speed
-srt-voiceover revoice podcast.mp3 -o faster_podcast.mp3 --speed 1.2 -c config.yaml
+# With custom speed and multi-speaker detection
+srt-voiceover revoice podcast.mp3 -o faster_podcast.mp3 --rate "+20%" --multi-speaker -c config.yaml
+
+# Video input: extract audio, transcribe, re-voice (uses GPU if available)
+srt-voiceover revoice video.mp4 -o new_video_audio.mp3 --use-pyannote -c config.yaml
 ```
 
 #### 4. Extract Audio from Video (NEW!)
@@ -164,49 +194,53 @@ from srt_voiceover import build_voiceover_from_srt
 build_voiceover_from_srt(
     srt_path="subtitles.srt",
     output_audio_path="output.mp3",
-    edge_tts_url="http://localhost:5050/v1/audio/speech",
-    api_key="your_api_key",
     speaker_voices={
         "Nathan": "en-US-AndrewMultilingualNeural",
         "Nicole": "en-US-EmmaMultilingualNeural",
     },
     default_voice="en-US-GuyNeural",
-    speed=1.0,
-    response_format="mp3"
+    rate="+0%",
+    volume="+0%",
+    pitch="+0Hz"
 )
 ```
 
-#### Audio to SRT (NEW!)
+#### Audio to SRT
 ```python
 from srt_voiceover import transcribe_audio_to_srt
 
 transcribe_audio_to_srt(
     audio_path="podcast.mp3",
     output_srt_path="subtitles.srt",
-    whisper_url="http://localhost:5050/v1/audio/transcriptions",
-    api_key="your_api_key",
     language="en",
-    enable_speaker_detection=True
+    enable_speaker_detection=True,  # For basic multi-speaker
+    use_pyannote=False,  # Set to True for professional diarization
+    device="cpu"  # "cpu" or "cuda" or "auto" (default: "auto")
 )
 ```
 
-#### Complete Workflow (NEW!)
+#### Complete Workflow
 ```python
 from srt_voiceover import audio_to_voiceover_workflow
+from pathlib import Path
 
-# One function does it all!
+# One function does it all! (GPU auto-detected)
 srt_path, audio_path = audio_to_voiceover_workflow(
     input_audio="original.mp3",
     output_audio="revoiced.mp3",
-    whisper_url="http://localhost:5050/v1/audio/transcriptions",
-    edge_tts_url="http://localhost:5050/v1/audio/speech",
-    api_key="your_api_key",
     speaker_voices={
         "Speaker A": "en-US-AndrewMultilingualNeural",
         "Speaker B": "en-US-EmmaMultilingualNeural",
     },
+    default_voice="en-US-AndrewMultilingualNeural",
     language="en",
-    speed=1.0
+    rate="+0%",
+    volume="+0%",
+    pitch="+0Hz",
+    whisper_model="base",
+    enable_speaker_detection=False,  # For basic multi-speaker
+    use_pyannote=True,  # For professional diarization
+    device="auto"  # Auto-detects GPU
 )
 ```
 
@@ -323,8 +357,25 @@ srt-voiceover revoice video.mp4 -o output.mp3
 # Basic multi-speaker (fast, heuristic-based)
 srt-voiceover revoice video.mp4 -o output.mp3 --multi-speaker
 
-# Professional pyannote (best quality, slower)
+# Professional pyannote (best quality, uses GPU if available)
 srt-voiceover revoice video.mp4 -o output.mp3 --use-pyannote
+```
+
+**Note:** GPU acceleration is automatic! If you installed with `[cuda]` extras and have a CUDA GPU, it will be used automatically. No need to specify `--device cuda`.
+
+### Device Override (Advanced)
+
+The module auto-detects the best device, but you can override if needed:
+
+```bash
+# Auto-detect (DEFAULT - uses GPU if available)
+srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote
+
+# Force CPU (useful for testing or debugging)
+srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote --device cpu
+
+# Force CUDA (will error if not available)
+srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote --device cuda
 ```
 
 ### Timing Tolerance
