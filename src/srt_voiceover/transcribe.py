@@ -41,6 +41,7 @@ def transcribe_audio_to_srt(
     api_key: Optional[str] = None,
     # Professional diarization (optional - requires pyannote.audio)
     use_pyannote: bool = False,
+    device: str = "cpu",
 ) -> str:
     """
     Transcribe audio file to SRT format with timestamps using OpenAI Whisper.
@@ -62,6 +63,7 @@ def transcribe_audio_to_srt(
         api_key: API key (for API mode)
         use_pyannote: Use pyannote.audio for professional speaker diarization (default: False)
                       Requires HF_TOKEN environment variable to be set
+        device: Device to use for processing ("cpu" or "cuda", default: "cpu")
         
     Returns:
         Path to created SRT file
@@ -116,7 +118,7 @@ def transcribe_audio_to_srt(
     # Get speaker diarization if using pyannote
     speaker_map = {}
     if use_pyannote:
-        speaker_map = _get_pyannote_speakers(audio_path, verbose)
+        speaker_map = _get_pyannote_speakers(audio_path, device, verbose)
     
     for i, segment in enumerate(segments):
         start_time = segment.get('start', 0)

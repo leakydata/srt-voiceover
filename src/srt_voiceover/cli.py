@@ -320,6 +320,17 @@ def handle_revoice_command(args):
     if args.config:
         config = load_config(args.config)
     
+    # Detect/set device
+    if args.device == 'auto':
+        device, gpu_name = detect_device()
+        if not args.quiet and device == 'cuda':
+            print(f"GPU detected: {gpu_name}")
+            print(f"Using device: {device}")
+    else:
+        device = args.device
+        if not args.quiet:
+            print(f"Using device: {device}")
+    
     # Transcription settings
     use_whisper_api = config.get('use_whisper_api', False)
     whisper_api_url = args.whisper_url or config.get('whisper_api_url')
@@ -383,6 +394,7 @@ def handle_revoice_command(args):
             whisper_api_key=whisper_api_key,
             enable_speaker_detection=args.multi_speaker,
             use_pyannote=use_pyannote,
+            device=device,
         )
         
         # Clean up temp files
