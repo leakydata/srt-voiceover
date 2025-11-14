@@ -438,6 +438,7 @@ def audio_to_voiceover_workflow(
         output_srt_path=temp_srt,
         model=whisper_model,
         language=language,
+        enable_speaker_detection=enable_speaker_detection,
         verbose=verbose,
         use_api=use_whisper_api,
         api_url=whisper_api_url,
