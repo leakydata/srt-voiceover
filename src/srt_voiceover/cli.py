@@ -76,7 +76,7 @@ def create_sample_config(output_path: str, format: str = 'yaml') -> None:
         else:
             yaml.dump(sample_config, f, default_flow_style=False, sort_keys=False)
     
-    print(f"✓ Sample config created: {output_path}")
+    print(f"Sample config created: {output_path}")
 
 
 def main():
@@ -86,14 +86,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate voiceover from SRT
-  srt-voiceover input.srt -o output.mp3 --config config.yaml
+  # Generate voiceover from SRT (default command)
+  srt-voiceover input.srt -o output.mp3 -c config.yaml
+  
+  # Or explicitly use voiceover command
+  srt-voiceover voiceover input.srt -o output.mp3 -c config.yaml
   
   # Transcribe audio to SRT
-  srt-voiceover transcribe audio.mp3 -o output.srt --config config.yaml
+  srt-voiceover transcribe audio.mp3 -o output.srt -c config.yaml
   
   # Complete workflow: Audio → Transcribe → Re-voice
-  srt-voiceover revoice input.mp3 -o output.mp3 --config config.yaml
+  srt-voiceover revoice input.mp3 -o output.mp3 -c config.yaml
   
   # Extract audio from video
   srt-voiceover extract-audio video.mp4 -o audio.wav
@@ -103,21 +106,24 @@ Examples:
         """
     )
     
+    # Global options
+    parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
+    parser.add_argument('--version', action='version', version=f'srt-voiceover {__version__}')
+    
     # Subcommands
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
-    # Default command (no subcommand) - SRT to voiceover
-    parser.add_argument('input', nargs='?', help='Input SRT file')
-    parser.add_argument('-o', '--output', help='Output audio file (default: output.mp3)')
-    parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
-    parser.add_argument('--default-voice', help='Default voice for unlabeled speakers')
-    parser.add_argument('--rate', help='Speech rate (e.g., "+0%%", "-50%%", "+100%%")')
-    parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%", "+100%%")')
-    parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")')
-    parser.add_argument('--tolerance', type=int, help='Timing tolerance in milliseconds (default: 150)')
-    parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
-    parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
-    parser.add_argument('--version', action='version', version=f'srt-voiceover {__version__}')
+    # Default/voiceover command - SRT to voiceover
+    voiceover_parser = subparsers.add_parser('voiceover', help='Convert SRT to voiceover (default if no command)', add_help=False)
+    voiceover_parser.add_argument('input', help='Input SRT file')
+    voiceover_parser.add_argument('-o', '--output', help='Output audio file (default: output.mp3)')
+    voiceover_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
+    voiceover_parser.add_argument('--default-voice', help='Default voice for unlabeled speakers')
+    voiceover_parser.add_argument('--rate', help='Speech rate (e.g., "+0%%", "-50%%", "+100%%")')
+    voiceover_parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%", "+100%%")')
+    voiceover_parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")')
+    voiceover_parser.add_argument('--tolerance', type=int, help='Timing tolerance in milliseconds (default: 150)')
+    voiceover_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Transcribe subcommand
     transcribe_parser = subparsers.add_parser('transcribe', help='Transcribe audio to SRT file')
@@ -152,13 +158,20 @@ Examples:
     extract_parser.add_argument('--format', choices=['mp3', 'wav'], default='wav', help='Output audio format')
     extract_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
-    args = parser.parse_args()
+    # Parse args - but handle special case where first arg is a file (default voiceover command)
+    args, unknown = parser.parse_known_args()
     
     # Handle --init-config
-    if hasattr(args, 'init_config') and args.init_config:
+    if args.init_config:
         format_type = 'json' if args.init_config.endswith('.json') else 'yaml'
         create_sample_config(args.init_config, format_type)
         return
+    
+    # If no command specified and unknown args exist, assume it's the voiceover command
+    if not args.command and unknown:
+        # Re-parse with voiceover subcommand prepended
+        sys.argv.insert(1, 'voiceover')
+        args = parser.parse_args()
     
     # Route to appropriate command handler
     if args.command == 'transcribe':
@@ -167,8 +180,11 @@ Examples:
         handle_revoice_command(args)
     elif args.command == 'extract-audio':
         handle_extract_audio_command(args)
-    else:
+    elif args.command == 'voiceover':
         handle_voiceover_command(args, parser)
+    else:
+        parser.print_help()
+        sys.exit(1)
     
 def handle_voiceover_command(args, parser):
     """Handle the default voiceover command (SRT to audio)."""
