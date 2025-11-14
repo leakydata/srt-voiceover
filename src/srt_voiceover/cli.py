@@ -158,6 +158,8 @@ Examples:
                                  help='Enable basic multi-speaker detection (default: single speaker)')
     revoice_parser.add_argument('--use-pyannote', action='store_true',
                                  help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
+    revoice_parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto',
+                                 help='Device to use for transcription/diarization (default: auto)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -260,6 +262,17 @@ def handle_transcribe_command(args):
     if args.config:
         config = load_config(args.config)
     
+    # Detect/set device
+    if args.device == 'auto':
+        device, gpu_name = detect_device()
+        if not args.quiet and device == 'cuda':
+            print(f"GPU detected: {gpu_name}")
+            print(f"Using device: {device}")
+    else:
+        device = args.device
+        if not args.quiet:
+            print(f"Using device: {device}")
+    
     # Check for optional API usage
     use_api = config.get('use_whisper_api', False)
     api_url = args.whisper_url or config.get('whisper_api_url')
@@ -286,6 +299,7 @@ def handle_transcribe_command(args):
             api_url=api_url,
             api_key=api_key,
             use_pyannote=args.use_pyannote,
+            device=device,
         )
         print(f"[OK] Transcription complete: {output_path}")
     except ImportError as e:
