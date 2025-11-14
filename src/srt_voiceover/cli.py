@@ -95,7 +95,7 @@ Examples:
   # Transcribe audio to SRT
   srt-voiceover transcribe audio.mp3 -o output.srt -c config.yaml
   
-  # Complete workflow: Audio → Transcribe → Re-voice
+  # Complete workflow: Audio -> Transcribe -> Re-voice
   srt-voiceover revoice input.mp3 -o output.mp3 -c config.yaml
   
   # Extract audio from video
