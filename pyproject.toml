@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "srt-voiceover"
-version = "0.1.0"
-description = "Convert SRT subtitle files to synchronized voiceover audio using Edge TTS"
+version = "0.2.0"
+description = "Convert SRT subtitle files to synchronized voiceover audio using Edge TTS, or transcribe audio to SRT"
 readme = "README.md"
 authors = [
     {name = "Nathan Jones", email = ""},

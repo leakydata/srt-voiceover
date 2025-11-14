@@ -1,8 +1,11 @@
 # Example configuration for srt-voiceover
 # Copy this file and customize for your needs
 
-# Edge TTS API endpoint
+# Edge TTS API endpoint (for text-to-speech)
 edge_tts_url: "http://localhost:5050/v1/audio/speech"
+
+# Whisper API endpoint (for speech-to-text transcription)
+whisper_url: "http://localhost:5050/v1/audio/transcriptions"
 
 # API key for authentication
 api_key: "your_api_key_here"

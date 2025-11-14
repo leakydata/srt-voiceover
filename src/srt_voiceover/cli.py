@@ -10,6 +10,12 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from .core import build_voiceover_from_srt
+from .transcribe import (
+    transcribe_audio_to_srt,
+    audio_to_voiceover_workflow,
+    extract_audio_from_video,
+    convert_audio_format,
+)
 from . import __version__
 
 
@@ -74,24 +80,31 @@ def create_sample_config(output_path: str, format: str = 'yaml') -> None:
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description="Convert SRT subtitle files to synchronized voiceover audio using Edge TTS",
+        description="Convert SRT subtitle files to synchronized voiceover audio using Edge TTS, or transcribe audio to SRT",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate voiceover using a config file
+  # Generate voiceover from SRT
   srt-voiceover input.srt -o output.mp3 --config config.yaml
   
-  # Generate voiceover with direct parameters
-  srt-voiceover input.srt -o output.mp3 --url http://localhost:5050/v1/audio/speech --api-key YOUR_KEY
+  # Transcribe audio to SRT
+  srt-voiceover transcribe audio.mp3 -o output.srt --config config.yaml
+  
+  # Complete workflow: Audio → Transcribe → Re-voice
+  srt-voiceover revoice input.mp3 -o output.mp3 --config config.yaml
+  
+  # Extract audio from video
+  srt-voiceover extract-audio video.mp4 -o audio.wav
   
   # Create a sample configuration file
   srt-voiceover --init-config config.yaml
-  
-  # List available voices (if your server supports it)
-  srt-voiceover --list-voices --url http://localhost:5050
         """
     )
     
+    # Subcommands
+    subparsers = parser.add_subparsers(dest='command', help='Command to run')
+    
+    # Default command (no subcommand) - SRT to voiceover
     parser.add_argument('input', nargs='?', help='Input SRT file')
     parser.add_argument('-o', '--output', help='Output audio file (default: output.mp3)')
     parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
@@ -105,14 +118,58 @@ Examples:
     parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
     parser.add_argument('--version', action='version', version=f'srt-voiceover {__version__}')
     
+    # Transcribe subcommand
+    transcribe_parser = subparsers.add_parser('transcribe', help='Transcribe audio to SRT file')
+    transcribe_parser.add_argument('input', help='Input audio file (mp3, wav, m4a, etc.)')
+    transcribe_parser.add_argument('-o', '--output', help='Output SRT file (default: output.srt)')
+    transcribe_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
+    transcribe_parser.add_argument('--whisper-url', help='Whisper API URL')
+    transcribe_parser.add_argument('--api-key', help='API key for authentication')
+    transcribe_parser.add_argument('--language', help='Language code (en, es, fr, etc.)')
+    transcribe_parser.add_argument('--model', default='whisper-1', help='Whisper model name')
+    transcribe_parser.add_argument('--no-speaker-detection', action='store_true', help='Disable speaker detection')
+    transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
+    
+    # Revoice subcommand (complete workflow)
+    revoice_parser = subparsers.add_parser('revoice', help='Complete workflow: transcribe + re-voice audio')
+    revoice_parser.add_argument('input', help='Input audio file')
+    revoice_parser.add_argument('-o', '--output', help='Output audio file (default: revoiced.mp3)')
+    revoice_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
+    revoice_parser.add_argument('--whisper-url', help='Whisper API URL')
+    revoice_parser.add_argument('--tts-url', help='Edge TTS API URL')
+    revoice_parser.add_argument('--api-key', help='API key for authentication')
+    revoice_parser.add_argument('--language', help='Language code for transcription')
+    revoice_parser.add_argument('--speed', type=float, help='Speech speed multiplier')
+    revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
+    revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
+    
+    # Extract audio subcommand
+    extract_parser = subparsers.add_parser('extract-audio', help='Extract audio from video file')
+    extract_parser.add_argument('input', help='Input video file')
+    extract_parser.add_argument('-o', '--output', help='Output audio file (default: extracted.wav)')
+    extract_parser.add_argument('--format', choices=['mp3', 'wav'], default='wav', help='Output audio format')
+    extract_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
+    
     args = parser.parse_args()
     
     # Handle --init-config
-    if args.init_config:
+    if hasattr(args, 'init_config') and args.init_config:
         format_type = 'json' if args.init_config.endswith('.json') else 'yaml'
         create_sample_config(args.init_config, format_type)
         return
     
+    # Route to appropriate command handler
+    if args.command == 'transcribe':
+        handle_transcribe_command(args)
+    elif args.command == 'revoice':
+        handle_revoice_command(args)
+    elif args.command == 'extract-audio':
+        handle_extract_audio_command(args)
+    else:
+        handle_voiceover_command(args, parser)
+    
+def handle_voiceover_command(args, parser):
+    """Handle the default voiceover command (SRT to audio)."""
     # Check if input file is provided
     if not args.input:
         parser.error("the following arguments are required: input")
@@ -166,6 +223,113 @@ Examples:
         print("✓ Conversion complete!")
     except Exception as e:
         print(f"Error during conversion: {e}")
+        sys.exit(1)
+
+
+def handle_transcribe_command(args):
+    """Handle the transcribe command (audio to SRT)."""
+    config = {}
+    if args.config:
+        config = load_config(args.config)
+    
+    whisper_url = args.whisper_url or config.get('whisper_url', 'http://localhost:5050/v1/audio/transcriptions')
+    api_key = args.api_key or config.get('api_key', '')
+    language = args.language or config.get('language')
+    
+    output_path = args.output or "output.srt"
+    
+    if not Path(args.input).exists():
+        print(f"Error: Input file not found: {args.input}")
+        sys.exit(1)
+    
+    try:
+        transcribe_audio_to_srt(
+            audio_path=args.input,
+            output_srt_path=output_path,
+            whisper_url=whisper_url,
+            api_key=api_key,
+            model=args.model,
+            language=language,
+            enable_speaker_detection=not args.no_speaker_detection,
+            verbose=not args.quiet,
+        )
+        print(f"✓ Transcription complete: {output_path}")
+    except Exception as e:
+        print(f"Error during transcription: {e}")
+        sys.exit(1)
+
+
+def handle_revoice_command(args):
+    """Handle the revoice command (complete workflow)."""
+    config = {}
+    if args.config:
+        config = load_config(args.config)
+    
+    whisper_url = args.whisper_url or config.get('whisper_url', 'http://localhost:5050/v1/audio/transcriptions')
+    tts_url = args.tts_url or config.get('edge_tts_url')
+    api_key = args.api_key or config.get('api_key', '')
+    language = args.language or config.get('language')
+    speed = args.speed if args.speed is not None else config.get('speed', 1.0)
+    speaker_voices = config.get('speaker_voices', {})
+    default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
+    
+    if not tts_url:
+        print("Error: Edge TTS URL is required. Use --tts-url or provide it in config file.")
+        sys.exit(1)
+    
+    output_path = args.output or "revoiced.mp3"
+    temp_srt = "temp_transcription.srt" if not args.keep_srt else output_path.replace('.mp3', '.srt').replace('.wav', '.srt')
+    
+    if not Path(args.input).exists():
+        print(f"Error: Input file not found: {args.input}")
+        sys.exit(1)
+    
+    try:
+        srt_path, audio_path = audio_to_voiceover_workflow(
+            input_audio=args.input,
+            output_audio=output_path,
+            whisper_url=whisper_url,
+            edge_tts_url=tts_url,
+            api_key=api_key,
+            speaker_voices=speaker_voices,
+            default_voice=default_voice,
+            temp_srt=temp_srt,
+            language=language,
+            speed=speed,
+            verbose=not args.quiet,
+        )
+        
+        # Clean up temp SRT if not keeping it
+        if not args.keep_srt and srt_path == "temp_transcription.srt":
+            try:
+                Path(srt_path).unlink()
+            except:
+                pass
+        
+        print(f"\n✓ Re-voicing complete: {audio_path}")
+    except Exception as e:
+        print(f"Error during re-voicing: {e}")
+        sys.exit(1)
+
+
+def handle_extract_audio_command(args):
+    """Handle the extract-audio command."""
+    output_path = args.output or f"extracted.{args.format}"
+    
+    if not Path(args.input).exists():
+        print(f"Error: Input file not found: {args.input}")
+        sys.exit(1)
+    
+    try:
+        extract_audio_from_video(
+            video_path=args.input,
+            output_audio_path=output_path,
+            audio_format=args.format,
+            verbose=not args.quiet,
+        )
+        print(f"✓ Audio extracted: {output_path}")
+    except Exception as e:
+        print(f"Error during audio extraction: {e}")
         sys.exit(1)
 
 
