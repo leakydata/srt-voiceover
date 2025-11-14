@@ -114,7 +114,7 @@ Examples:
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
     # Default/voiceover command - SRT to voiceover
-    voiceover_parser = subparsers.add_parser('voiceover', help='Convert SRT to voiceover (default if no command)', add_help=False)
+    voiceover_parser = subparsers.add_parser('voiceover', help='Convert SRT -> voiceover (default if no command)', add_help=False)
     voiceover_parser.add_argument('input', help='Input SRT file')
     voiceover_parser.add_argument('-o', '--output', help='Output audio file (default: output.mp3)')
     voiceover_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
