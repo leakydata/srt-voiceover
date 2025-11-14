@@ -583,6 +583,7 @@ def audio_to_voiceover_workflow(
         api_url=whisper_api_url,
         api_key=whisper_api_key,
         use_pyannote=use_pyannote,
+        device=device,
     )
     
     if verbose:

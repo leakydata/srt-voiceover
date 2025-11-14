@@ -19,6 +19,20 @@ from .transcribe import (
 from . import __version__
 
 
+def detect_device():
+    """Detect if CUDA GPU is available and return device."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            device = "cuda"
+            gpu_name = torch.cuda.get_device_name(0)
+            return device, gpu_name
+        else:
+            return "cpu", None
+    except ImportError:
+        return "cpu", None
+
+
 def load_config(config_path: str) -> Dict:
     """
     Load configuration from JSON or YAML file.
