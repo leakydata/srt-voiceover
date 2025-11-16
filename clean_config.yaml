@@ -1,0 +1,8 @@
+default_voice: "en-US-AndrewMultilingualNeural"
+rate: "+20%"
+volume: "+0%"
+pitch: "+0Hz"
+timing_tolerance_ms: 400
+enable_time_stretch: false  # Disabled - cleaner sound for fast speech
+whisper_model: "base"
+
