@@ -1,7 +1,7 @@
 # 🎙️ srt-voiceover
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
 **AI-powered audio dubbing pipeline: Transcribe, edit, and convert to synchronized voiceovers using Whisper + Microsoft Edge TTS.**
 
@@ -213,7 +213,7 @@ pip install srt-voiceover[cuda]
 
 ## 🛠️ Requirements
 
-- **Python 3.7+**
+- **Python 3.11+** (tested on 3.11 and 3.12)
 - **FFmpeg** - For audio/video processing ([download](https://ffmpeg.org/download.html))
 - **GPU (optional)** - NVIDIA CUDA for faster processing
 - **HF Token (optional)** - For professional speaker diarization ([get token](https://huggingface.co/settings/tokens))

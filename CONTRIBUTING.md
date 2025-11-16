@@ -52,7 +52,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.11+ (tested on 3.11 and 3.12)
 - FFmpeg installed and in PATH
 - Git
 
@@ -109,7 +109,7 @@ srt-voiceover/
 
 ### Python Style
 
-- **Python 3.7+** compatible code
+- **Python 3.11+** compatible code (tested on 3.11 and 3.12)
 - **PEP 8** style guide (max line length: 100 characters)
 - **Type hints** where appropriate
 - **Docstrings** for all public functions/classes (Google style)

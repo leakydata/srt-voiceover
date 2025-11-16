@@ -51,7 +51,7 @@ pip install srt-voiceover[cuda]
 ### Requirements
 
 - **FFmpeg**: Required for audio/video processing
-- **Python 3.7+**: Core requirement
+- **Python 3.11+**: Core requirement (tested on 3.11 and 3.12)
 - **CUDA GPU** (optional): For faster processing
 
 ---
