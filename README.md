@@ -3,519 +3,286 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 
-**Complete AI-powered audio dubbing pipeline: Transcribe audio to SRT with speaker detection, then convert to synchronized voiceovers using Microsoft Edge TTS.**
+**AI-powered audio dubbing pipeline: Transcribe, edit, and convert to synchronized voiceovers using Whisper + Microsoft Edge TTS.**
 
-Perfect alternative to SpeechGen, Murf.ai, and other paid dubbing services! Create high-quality voiceovers for:
-- 🎬 Video dubbing and localization
-- 🎧 Podcast re-voicing and translation
-- 📹 YouTube content creation
-- 🎭 ADR (Automated Dialogue Replacement) workflows
-- 📺 Audiobook production
-- 🔄 Voice replacement in existing recordings
+Perfect free alternative to SpeechGen, Murf.ai, and other paid dubbing services!
 
 ## ✨ Features
 
-### 🎤 Audio Transcription (NEW!)
-- **🎙️ Audio → SRT**: Transcribe any audio file to subtitles with timestamps
-- **👥 Speaker Detection**: Three modes - single speaker, basic heuristic, or professional ML-based (pyannote)
-- **🎬 Video Support**: Extract audio from MP4/AVI/MKV and other video formats automatically
-- **🌍 Multi-Language**: Supports 50+ languages via Whisper
-- **💻 Local Processing**: Runs on your machine (no cloud API needed)
-
-### 🔊 Voice Generation
-- **🎭 Multi-Speaker Support**: Assign different voices to different speakers
-- **⏱️ Perfect Timing**: Synchronizes audio precisely with subtitle timestamps
-- **🌍 400+ Voices**: Access to all Microsoft Edge TTS voices in 80+ languages
-- **🎚️ Voice Customization**: Adjust speech rate, volume, and pitch
-- **🚫 No API Costs**: Uses free Microsoft Edge TTS service directly
-
-### 🔄 Complete Workflow
-- **One-Command Dubbing**: Audio → Transcribe → Re-voice in one step
-- **📦 Easy Installation**: Install via pip and use from command line
-- **⚙️ Flexible Configuration**: YAML/JSON config files or command-line arguments
-- **💰 Free & Open Source**: No subscriptions or API costs (runs locally)
+- 🎤 **Audio Transcription** - Convert audio/video to SRT with Whisper
+- 🎭 **Multi-Speaker Support** - Automatic speaker detection and voice assignment
+- ⏱️ **Perfect Timing** - Word-level timing with elastic rate smoothing
+- 🌍 **400+ Voices** - Microsoft Edge TTS in 80+ languages
+- 🎬 **Video Dubbing** - Complete pipeline for video re-voicing
+- ✏️ **Edit Workflow** - Fix transcription errors before voiceover generation
+- 🚀 **GPU Acceleration** - 5-10x faster with CUDA
+- 💰 **Free & Open Source** - No subscriptions or API costs
 
 ## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Install from PyPI (coming soon)
-pip install srt-voiceover
-
-# Or install from source
-git clone https://github.com/leakydata/srt-voiceover.git
-cd srt-voiceover
-pip install -e .
+pip install srt-voiceover[all]
 ```
 
-### Prerequisites
-
-1. **FFmpeg** - Required for audio processing
-   - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH
-   - Mac: `brew install ffmpeg`
-   - Linux: `sudo apt-get install ffmpeg`
-
-2. **OpenAI Whisper** (Optional) - For audio transcription features
-   ```bash
-   pip install openai-whisper
-   # Or install with transcription support
-   pip install srt-voiceover[transcription]
-   ```
-
-3. **Pyannote Audio** (Optional) - For professional speaker diarization
-   ```bash
-   pip install pyannote.audio
-   # Or install with diarization support
-   pip install srt-voiceover[diarization]
-   ```
-   
-   **Setup HuggingFace Token:**
-   - Get token at: https://huggingface.co/settings/tokens
-   - Accept license: https://huggingface.co/pyannote/speaker-diarization-3.1
-   - Set environment variable:
-     ```bash
-     # Windows PowerShell (permanent):
-     [System.Environment]::SetEnvironmentVariable('HF_TOKEN', 'hf_your_token_here', 'User')
-     
-     # Windows CMD:
-     setx HF_TOKEN "hf_your_token_here"
-     
-     # Linux/Mac (add to ~/.bashrc or ~/.zshrc):
-     export HF_TOKEN=hf_your_token_here
-     ```
-
-4. **GPU Acceleration** (Optional) - For faster transcription and diarization
-   
-   **For CUDA-capable GPUs (NVIDIA RTX, etc.):**
-   ```bash
-   # First install PyTorch with CUDA support (adjust cu121 for your CUDA version)
-   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-   
-   # Then install srt-voiceover with CUDA features
-   pip install srt-voiceover[cuda]
-   
-   # Or install everything with GPU support
-   pip install srt-voiceover[all]  # After installing CUDA PyTorch
-   ```
-   
-   **That's it!** The module will automatically detect and use your GPU. No need to specify `--device cuda` in commands.
-   
-   **For CPU-only systems:**
-   ```bash
-   # Standard installation works fine - automatically uses CPU
-   pip install srt-voiceover[transcription]  # CPU version
-   pip install srt-voiceover[diarization]    # CPU version
-   pip install srt-voiceover[all]            # CPU version (if no CUDA PyTorch)
-   ```
+**Required:** [FFmpeg](https://ffmpeg.org/download.html) (must be in PATH)
 
 ### Basic Usage
 
 ```bash
-# Create a sample config file
-srt-voiceover --init-config config.yaml
+# Convert SRT to voiceover
+srt-voiceover voiceover subtitles.srt -o output.mp3
 
-# Edit config.yaml with your settings (API URLs, voices, etc.)
+# Transcribe audio to SRT
+srt-voiceover transcribe audio.mp3 -o output.srt
 
-# Method 1: SRT → Voiceover (original functionality)
-srt-voiceover input.srt -o output.mp3 --config config.yaml
+# Re-voice entire video (one command)
+srt-voiceover revoice video.mp4 -o new_audio.mp3 --use-word-timing --elastic-timing
 
-# Method 2: Audio → SRT (NEW! transcription)
-srt-voiceover transcribe audio.mp3 -o output.srt --config config.yaml
-
-# Method 3: Complete workflow - Audio → SRT → New Voiceover (NEW!)
-srt-voiceover revoice original_audio.mp3 -o new_audio.mp3 --config config.yaml
+# Merge audio back into video
+ffmpeg -i video.mp4 -i new_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 final.mp4
 ```
 
-## 📖 Usage Examples
+### Two-Step Workflow (Edit Transcriptions)
 
-### Command Line Interface
-
-#### 1. SRT to Voiceover (Original Feature)
 ```bash
-# Using config file (recommended)
-srt-voiceover subtitles.srt -o voiceover.mp3 --config config.yaml
+# 1. Transcribe and save word timings
+srt-voiceover transcribe video.mp4 -o transcript.srt --save-word-timings
 
-# Using command line arguments
-srt-voiceover subtitles.srt -o voiceover.mp3 \
-  --url http://localhost:5050/v1/audio/speech \
-  --api-key your_api_key \
-  --speed 1.1
+# 2. Edit transcript.srt to fix errors (use any text editor)
 
-# WAV output instead of MP3
-srt-voiceover input.srt -o output.wav --format wav -c config.yaml
+# 3. Generate corrected voiceover
+srt-voiceover voiceover transcript.srt -o output.mp3 \
+  --word-timings transcript_word_timings.json --elastic-timing
 ```
 
-#### 2. Audio to SRT (Transcription)
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[Full Documentation](DOCUMENTATION.md)** - Complete guide with examples
+- **[Contributing Guide](CONTRIBUTING.md)** - Development setup
+
+## 🎯 Use Cases
+
+- 🎬 Video dubbing and localization
+- 🎧 Podcast re-voicing and translation
+- 📹 YouTube content creation
+- 🎭 ADR (Automated Dialogue Replacement)
+- 📺 Audiobook production
+- 🔄 Voice replacement in recordings
+
+## 🎨 Voice Timing Modes
+
+### Default (Fast & Natural)
 ```bash
-# Transcribe audio file to SRT (single speaker - DEFAULT)
-srt-voiceover transcribe podcast.mp3 -o subtitles.srt --config config.yaml
-
-# Transcribe with language specification
-srt-voiceover transcribe audio.mp3 -o output.srt --language en
-
-# Transcribe with basic multi-speaker detection
-srt-voiceover transcribe audio.mp3 -o output.srt --multi-speaker
-
-# Transcribe with professional pyannote diarization (auto-uses GPU if available)
-srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote
+srt-voiceover revoice audio.mp3 -o output.mp3
 ```
+Best for audio-only content. Very natural sounding, may drift slightly from original timing.
 
-#### 3. Complete Re-voicing Workflow
+### Word-Level (Dynamic Pacing)
 ```bash
-# One command: transcribe + re-voice (single speaker - DEFAULT)
-srt-voiceover revoice original.mp3 -o new_voice.mp3 --config config.yaml
-
-# Keep the generated SRT file
-srt-voiceover revoice original.mp3 -o new_voice.mp3 --keep-srt -c config.yaml
-
-# With custom speed and multi-speaker detection
-srt-voiceover revoice podcast.mp3 -o faster_podcast.mp3 --rate "+20%" --multi-speaker -c config.yaml
-
-# Video input: extract audio, transcribe, re-voice (uses GPU if available)
-srt-voiceover revoice video.mp4 -o new_video_audio.mp3 --use-pyannote -c config.yaml
+srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing
 ```
+Extracts word timestamps from Whisper for accurate pacing. Good for screen recordings.
 
-#### 4. Extract Audio from Video (NEW!)
+### Elastic with Smoothing (Recommended for Video)
 ```bash
-# Extract audio from video
-srt-voiceover extract-audio video.mp4 -o audio.wav
+srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing --elastic-timing
+```
+Perfect timing + smooth, natural transitions. Best for video dubbing with visible speakers.
 
-# Extract as MP3
-srt-voiceover extract-audio video.mp4 -o audio.mp3 --format mp3
+**How it works:** Expands timing windows by borrowing from gaps, then smooths rate changes (max 15% per segment) to prevent jarring speed jumps.
+
+## 🌍 Multi-Language Support
+
+400+ voices in 80+ languages:
+
+```bash
+# List all voices
+srt-voiceover --list-voices
+
+# Use specific voice
+srt-voiceover voiceover script.srt -o output.mp3 \
+  --default-voice "es-ES-ElviraNeural"  # Spanish
 ```
 
-### Python API
+Popular voices:
+- English (US): `en-US-AndrewMultilingualNeural`, `en-US-JennyNeural`
+- Spanish: `es-ES-ElviraNeural`, `es-MX-DaliaNeural`
+- French: `fr-FR-DeniseNeural`, `fr-CA-SylvieNeural`
+- German: `de-DE-KatjaNeural`, `de-DE-ConradNeural`
+- Japanese: `ja-JP-NanamiNeural`, `ja-JP-KeitaNeural`
 
-#### SRT to Voiceover
-```python
-from srt_voiceover import build_voiceover_from_srt
+## 👥 Multi-Speaker Support
 
-build_voiceover_from_srt(
-    srt_path="subtitles.srt",
-    output_audio_path="output.mp3",
-    speaker_voices={
-        "Nathan": "en-US-AndrewMultilingualNeural",
-        "Nicole": "en-US-EmmaMultilingualNeural",
-    },
-    default_voice="en-US-GuyNeural",
-    rate="+0%",
-    volume="+0%",
-    pitch="+0Hz"
-)
+### Automatic Detection
+
+```bash
+# Basic speaker detection
+srt-voiceover revoice podcast.mp3 -o output.mp3 --multi-speaker
+
+# Professional ML-based diarization (requires HF_TOKEN)
+srt-voiceover revoice podcast.mp3 -o output.mp3 --use-pyannote --use-word-timing
 ```
 
-#### Audio to SRT
-```python
-from srt_voiceover import transcribe_audio_to_srt
+### Manual Assignment
 
-transcribe_audio_to_srt(
-    audio_path="podcast.mp3",
-    output_srt_path="subtitles.srt",
-    language="en",
-    enable_speaker_detection=True,  # For basic multi-speaker
-    use_pyannote=False,  # Set to True for professional diarization
-    device="cpu"  # "cpu" or "cuda" or "auto" (default: "auto")
-)
+Create `config.yaml`:
+```yaml
+speaker_voices:
+  Alice: "en-US-EmmaMultilingualNeural"
+  Bob: "en-US-AndrewMultilingualNeural"
 ```
 
-#### Complete Workflow
-```python
-from srt_voiceover import audio_to_voiceover_workflow
-from pathlib import Path
+Label speakers in SRT:
+```srt
+1
+00:00:00,000 --> 00:00:02,000
+Alice: Hello, how are you?
 
-# One function does it all! (GPU auto-detected)
-srt_path, audio_path = audio_to_voiceover_workflow(
-    input_audio="original.mp3",
-    output_audio="revoiced.mp3",
-    speaker_voices={
-        "Speaker A": "en-US-AndrewMultilingualNeural",
-        "Speaker B": "en-US-EmmaMultilingualNeural",
-    },
-    default_voice="en-US-AndrewMultilingualNeural",
-    language="en",
-    rate="+0%",
-    volume="+0%",
-    pitch="+0Hz",
-    whisper_model="base",
-    enable_speaker_detection=False,  # For basic multi-speaker
-    use_pyannote=True,  # For professional diarization
-    device="auto"  # Auto-detects GPU
-)
+2
+00:00:02,500 --> 00:00:04,000
+Bob: I'm doing great, thanks!
+```
+
+## ⚡ GPU Acceleration
+
+5-10x faster transcription and diarization:
+
+```bash
+# Install CUDA PyTorch (adjust cu121 for your CUDA version)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Install CUDA features
+pip install srt-voiceover[cuda]
+
+# GPU is detected and used automatically
+srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing
 ```
 
 ## ⚙️ Configuration
 
-### Config File Format
-
-Create a `config.yaml` file:
+Create `config.yaml` for persistent settings:
 
 ```yaml
-# ===================================
-# Voice Settings
-# ===================================
+# Voice settings
 default_voice: "en-US-AndrewMultilingualNeural"
-
-# Speech adjustments
 rate: "+0%"      # Speed: -50% to +100%
 volume: "+0%"    # Volume: -50% to +100%
 pitch: "+0Hz"    # Pitch: -50Hz to +100Hz
 
-# Timing tolerance in milliseconds
-timing_tolerance_ms: 150
+# Timing (recommended for video)
+use_word_timing: true
+elastic_timing: true
+timing_tolerance_ms: 200
 
-# ===================================
-# Whisper Transcription - OPTIONAL
-# ===================================
-# Uses LOCAL whisper by default (pip install openai-whisper)
+# Transcription
 whisper_model: "base"  # tiny, base, small, medium, large
-use_whisper_api: false
 
-# Optional: OpenAI API mode
-# use_whisper_api: true
-# whisper_api_url: "https://api.openai.com/v1/audio/transcriptions"
-# whisper_api_key: "sk-your-openai-key"
-
-# ===================================
-# Pyannote Speaker Diarization - OPTIONAL
-# ===================================
-use_pyannote: false  # Set true for professional speaker detection
-# hf_token: "hf_your_token"  # Optional, will be prompted if needed
-
-# ===================================
-# Speaker to Voice Mapping
-# ===================================
+# Speaker mapping
 speaker_voices:
-  Nathan: "en-US-AndrewMultilingualNeural"
-  Nicole: "en-US-EmmaMultilingualNeural"
-  Speaker A: "en-US-GuyNeural"  # Auto-detected speakers
-  Speaker B: "en-US-JennyNeural"
+  Alice: "en-US-EmmaMultilingualNeural"
+  Bob: "en-US-AndrewMultilingualNeural"
 ```
 
-See `examples/config.yaml` for a complete example configuration.
-
-### SRT File Format
-
-Your SRT file should include speaker names in the format `Speaker: dialogue`
-
-```srt
-1
-00:00:00,000 --> 00:00:03,500
-Nathan: Welcome to our tutorial on converting subtitles to voiceovers.
-
-2
-00:00:03,500 --> 00:00:07,000
-Nicole: This is a powerful tool for creating automated dubbing.
-
-3
-00:00:07,500 --> 00:00:11,000
-Nathan: Let's see how easy it is to use.
-```
-
-If no speaker is specified, the default voice will be used.
-
-## 🎤 Available Voices
-
-To see all available Edge TTS voices, run:
+Use with any command:
 ```bash
-srt-voiceover --list-voices
+srt-voiceover revoice video.mp4 -o output.mp3 -c config.yaml
 ```
 
-This will display all 400+ voices organized by language, including voice names, gender, and supported features.
-
-Popular voices:
-- **English (US)**: `en-US-AndrewMultilingualNeural`, `en-US-EmmaMultilingualNeural`, `en-US-AriaNeural`, `en-US-GuyNeural`
-- **English (UK)**: `en-GB-RyanNeural`, `en-GB-SoniaNeural`
-- **Spanish**: `es-ES-AlvaroNeural`, `es-MX-DaliaNeural`
-- **French**: `fr-FR-DeniseNeural`, `fr-FR-HenriNeural`
-- **German**: `de-DE-KatjaNeural`, `de-DE-ConradNeural`
-- **Japanese**: `ja-JP-NanamiNeural`, `ja-JP-KeitaNeural`
-
-## 🔧 Advanced Features
-
-### Voice Customization
-
-Adjust speech rate, volume, and pitch:
+## 📦 Installation Options
 
 ```bash
-# Faster speech
-srt-voiceover input.srt -o output.mp3 --rate "+20%"
+# Core only (SRT to voiceover)
+pip install srt-voiceover
 
-# Quieter volume
-srt-voiceover input.srt -o output.mp3 --volume "-30%"
+# With transcription (Whisper)
+pip install srt-voiceover[transcription]
 
-# Lower pitch
-srt-voiceover input.srt -o output.mp3 --pitch "-50Hz"
+# With professional speaker diarization
+pip install srt-voiceover[diarization]
 
-# Combine multiple adjustments
-srt-voiceover input.srt -o output.mp3 --rate "+10%" --volume "+5%" --pitch "-20Hz"
+# Everything (CPU versions)
+pip install srt-voiceover[all]
+
+# GPU acceleration (install CUDA PyTorch first)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install srt-voiceover[cuda]
 ```
 
-### Speaker Detection Modes
+## 🛠️ Requirements
 
-Choose your speaker detection mode based on your needs:
+- **Python 3.7+**
+- **FFmpeg** - For audio/video processing ([download](https://ffmpeg.org/download.html))
+- **GPU (optional)** - NVIDIA CUDA for faster processing
+- **HF Token (optional)** - For professional speaker diarization ([get token](https://huggingface.co/settings/tokens))
+
+## 💡 Examples
+
+### Video Dubbing Pipeline
 
 ```bash
-# Single speaker (DEFAULT - fastest)
-srt-voiceover revoice video.mp4 -o output.mp3
+# Complete workflow with best quality settings
+srt-voiceover revoice video.mp4 -o dubbed.mp3 \
+  --use-word-timing \
+  --elastic-timing \
+  --default-voice "en-US-AndrewMultilingualNeural" \
+  --rate "+10%"
 
-# Basic multi-speaker (fast, heuristic-based)
-srt-voiceover revoice video.mp4 -o output.mp3 --multi-speaker
-
-# Professional pyannote (best quality, uses GPU if available)
-srt-voiceover revoice video.mp4 -o output.mp3 --use-pyannote
+# Merge with original video
+ffmpeg -i video.mp4 -i dubbed.mp3 -c:v copy -map 0:v:0 -map 1:a:0 final.mp4
 ```
 
-**Note:** GPU acceleration is automatic! If you installed with `[cuda]` extras and have a CUDA GPU, it will be used automatically. No need to specify `--device cuda`.
-
-### Device Override (Advanced)
-
-The module auto-detects the best device, but you can override if needed:
+### Multi-Language Translation
 
 ```bash
-# Auto-detect (DEFAULT - uses GPU if available)
-srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote
+# 1. Transcribe original
+srt-voiceover transcribe english.mp4 -o english.srt --save-word-timings
 
-# Force CPU (useful for testing or debugging)
-srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote --device cpu
+# 2. Translate SRT to Spanish (use any translation service)
 
-# Force CUDA (will error if not available)
-srt-voiceover transcribe audio.mp3 -o output.srt --use-pyannote --device cuda
+# 3. Generate Spanish voiceover
+srt-voiceover voiceover spanish.srt -o spanish.mp3 \
+  --word-timings english_word_timings.json \
+  --default-voice "es-ES-ElviraNeural" \
+  --elastic-timing
+
+# 4. Create Spanish version
+ffmpeg -i english.mp4 -i spanish.mp3 -c:v copy -map 0:v:0 -map 1:a:0 spanish.mp4
 ```
 
-### Timing Tolerance
-
-Control how strictly audio duration matches subtitle timing:
+### Batch Processing
 
 ```bash
-# Strict timing (adjust audio if off by more than 50ms)
-srt-voiceover input.srt -o output.mp3 -c config.yaml --tolerance 50
-
-# Relaxed timing (only adjust if off by more than 500ms)
-srt-voiceover input.srt -o output.mp3 -c config.yaml --tolerance 500
+# Process multiple videos
+for video in *.mp4; do
+  srt-voiceover revoice "$video" -o "${video%.mp4}_dubbed.mp3" \
+    --use-word-timing --elastic-timing
+done
 ```
-
-## 🆚 Comparison with Other Tools
-
-| Feature | srt-voiceover | SpeechGen | Murf.ai | ElevenLabs |
-|---------|---------------|-----------|---------|------------|
-| **Price** | Free | $$ | $$$ | $$$ |
-| **Multi-speaker** | ✅ | ✅ | ✅ | ✅ |
-| **Timing sync** | ✅ Auto | Manual | Manual | Manual |
-| **Local processing** | ✅ | ❌ | ❌ | ❌ |
-| **API limits** | None | Limited | Limited | Limited |
-| **Voice count** | 70+ | 50+ | 120+ | 100+ |
-| **Open source** | ✅ | ❌ | ❌ | ❌ |
-
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ❓ FAQ
-
-### Do I need any servers running?
-**No!** Everything runs locally. The tool uses the `edge-tts` Python module directly for text-to-speech, and `openai-whisper` for transcription. No external servers or API keys needed (except HuggingFace token for optional pyannote).
-
-### Which Whisper model should I use?
-- **tiny/base**: Fast, good for testing or lower-end hardware
-- **small**: Good balance of speed and accuracy
-- **medium/large**: Best quality, needs more RAM and time
-
-### Can I use this without installing Whisper?
-**Yes!** If you only need SRT → voiceover conversion, you don't need Whisper at all.
-
-### Is my audio sent to any servers?
-With local Whisper (default), your audio never leaves your machine. Only the final voiceover generation uses the Edge TTS server.
-
-### Can I use this commercially?
-Yes, MIT license. However, please check the Microsoft Edge TTS terms of service and the licenses of dependencies (Whisper, pyannote) for your specific use case.
-
-### How do I set up pyannote speaker diarization?
-1. Install: `pip install pyannote.audio`
-2. Create free account at [huggingface.co](https://huggingface.co/)
-3. Get token at [Settings → Tokens](https://huggingface.co/settings/tokens) (Read access)
-4. Accept license at [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
-5. Set `HF_TOKEN` environment variable (see Prerequisites section above)
-6. Use with `--use-pyannote` flag
-
-## 📧 Support
-
-- **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
-- **Issues**: [GitHub Issues](https://github.com/leakydata/srt-voiceover/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/leakydata/srt-voiceover/discussions)
-
-## 🔄 Common Workflows
-
-### Video Dubbing
-```bash
-# 1. Extract audio from video
-srt-voiceover extract-audio video.mp4 -o audio.wav
-
-# 2. Transcribe and re-voice in one step
-srt-voiceover revoice audio.wav -o new_audio.mp3 --keep-srt -c config.yaml
-
-# 3. Merge back with video using ffmpeg
-ffmpeg -i video.mp4 -i new_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 output.mp4
-```
-
-### Podcast Re-voicing
-```bash
-# Create different voice versions
-srt-voiceover revoice podcast.mp3 -o version_a.mp3 -c config_formal.yaml
-srt-voiceover revoice podcast.mp3 -o version_b.mp3 -c config_casual.yaml
-```
-
-### Batch Processing (Python)
-```python
-from srt_voiceover import audio_to_voiceover_workflow
-from pathlib import Path
-
-for audio_file in Path("./episodes").glob("*.mp3"):
-    audio_to_voiceover_workflow(
-        input_audio=str(audio_file),
-        output_audio=f"./output/{audio_file.name}",
-        speaker_voices={"Speaker A": "en-US-AndrewMultilingualNeural"},
-        default_voice="en-US-AndrewMultilingualNeural",
-        whisper_model="base",
-        verbose=False
-    )
-```
-
-## 🗺️ Roadmap
-
-- [x] Audio transcription to SRT (v0.2.0)
-- [x] Complete re-voicing workflow (v0.2.0)
-- [x] Video audio extraction (v0.2.0)
-- [x] Professional speaker diarization with pyannote (v0.3.0)
-- [x] Direct edge-tts module integration (v0.3.0)
-- [ ] Publish to PyPI
-- [ ] Add web UI
-- [ ] Support for more TTS engines (Google Cloud TTS, AWS Polly)
-- [ ] Batch processing mode with parallel processing
-- [ ] Voice emotion/style control
-- [ ] Background music mixing
-- [ ] Direct video output (merge with video file automatically)
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-This project is built on the shoulders of amazing open-source tools:
+- **[OpenAI Whisper](https://github.com/openai/whisper)** - Speech recognition
+- **[Microsoft Edge TTS](https://github.com/rany2/edge-tts)** - Text-to-speech
+- **[Pyannote.audio](https://github.com/pyannote/pyannote-audio)** - Speaker diarization
+- **[FFmpeg](https://ffmpeg.org/)** - Audio/video processing
 
-- **[edge-tts](https://github.com/rany2/edge-tts)** - Python interface to Microsoft Edge's TTS service (MIT License)
-- **[openai-whisper](https://github.com/openai/whisper)** - Robust speech recognition by OpenAI (MIT License)
-- **[pyannote-audio](https://github.com/pyannote/pyannote-audio)** - State-of-the-art speaker diarization (MIT License)
-- **[pydub](https://github.com/jiaaro/pydub)** - Audio manipulation made easy (MIT License)
-- **[pysrt](https://github.com/byroot/pysrt)** - SRT file parsing (GPL-3.0 License)
-- **[FFmpeg](https://ffmpeg.org/)** - The backbone of audio/video processing (LGPL/GPL)
+## 📞 Support
 
-Special thanks to the creators and maintainers of these projects! 🎉
+- **Issues**: https://github.com/leakydata/srt-voiceover/issues
+- **Discussions**: https://github.com/leakydata/srt-voiceover/discussions
+- **Documentation**: See [DOCUMENTATION.md](DOCUMENTATION.md)
 
 ---
 
-**Made with ❤️ by Nathan Jones**
-
-*If this tool saves you money on dubbing services, consider starring the repo!* ⭐
+**Made with ❤️ for the open-source community**
