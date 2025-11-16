@@ -1,181 +1,138 @@
-# ⚡ Quick Start Guide
+# Quick Start Guide
 
-Get up and running with srt-voiceover in 5 minutes!
+Get started with srt-voiceover in 5 minutes.
 
-> **Note**: This guide covers BOTH voiceover generation AND transcription features.
-
-## Step 1: Install Prerequisites
-
-### Install FFmpeg
-
-**Windows:**
-1. Download from https://ffmpeg.org/download.html
-2. Extract to `C:\ffmpeg`
-3. Add `C:\ffmpeg\bin` to your PATH environment variable
-
-**macOS:**
-```bash
-brew install ffmpeg
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install ffmpeg
-```
-
-### Install Edge TTS Server
+## Installation
 
 ```bash
-# Clone the server
-git clone https://github.com/travisvn/openai-edge-tts.git
-cd openai-edge-tts
+# Basic installation
+pip install srt-voiceover
 
-# Install dependencies
-npm install
-
-# Start the server (keep this running)
-npm start
-```
-
-The server will run on `http://localhost:5050`
-
-## Step 2: Install srt-voiceover
-
-```bash
-# Option 1: From GitHub (current)
-git clone https://github.com/leakydata/srt-voiceover.git
-cd srt-voiceover
-pip install -e .
-
-# Option 2: With transcription support
-pip install -e .[transcription]  # Includes openai-whisper
-
-# Option 3: Once published to PyPI
+# With transcription support
 pip install srt-voiceover[transcription]
+
+# Everything (CPU)
+pip install srt-voiceover[all]
 ```
 
-## Step 3: Create Configuration
+**Required:** Install [FFmpeg](https://ffmpeg.org/download.html) and add to PATH
+
+## 30-Second Tutorial
+
+### 1. Convert SRT to Voiceover
 
 ```bash
-# Generate a sample config file
-srt-voiceover --init-config config.yaml
+srt-voiceover voiceover subtitles.srt -o output.mp3
 ```
 
-Edit `config.yaml`:
-```yaml
-edge_tts_url: "http://localhost:5050/v1/audio/speech"
-api_key: "your_api_key_here"  # Change this to your actual key
-default_voice: "en-US-AndrewMultilingualNeural"
-response_format: "mp3"
-speed: 1.0
+###2. Transcribe Audio to SRT
 
-speaker_voices:
-  Nathan: "en-US-AndrewMultilingualNeural"
-  Nicole: "en-US-EmmaMultilingualNeural"
-  # Add your speakers here
-```
-
-## Step 4: Prepare Your SRT File
-
-Create or edit your SRT file with speaker labels:
-
-**example.srt:**
-```srt
-1
-00:00:00,000 --> 00:00:03,500
-Nathan: Welcome to this tutorial.
-
-2
-00:00:03,500 --> 00:00:07,000
-Nicole: Let's get started with the basics.
-
-3
-00:00:07,500 --> 00:00:10,000
-Nathan: First, we'll cover installation.
-```
-
-## Step 5: Use srt-voiceover
-
-### Option A: SRT to Voiceover
 ```bash
-srt-voiceover example.srt -o output.mp3 --config config.yaml
+srt-voiceover transcribe audio.mp3 -o output.srt
 ```
 
-### Option B: Audio to SRT (Transcription)
+### 3. Re-voice an Entire Video
+
 ```bash
-# First time: install Whisper
-pip install openai-whisper
-
-# Transcribe
-srt-voiceover transcribe audio.mp3 -o subtitles.srt --config config.yaml
+srt-voiceover revoice video.mp4 -o new_audio.mp3 --use-word-timing --elastic-timing
 ```
-
-### Option C: Complete Workflow (Audio → Transcribe → Re-voice)
-```bash
-srt-voiceover revoice original.mp3 -o new_voice.mp3 --config config.yaml
-```
-
-That's it! 🎉
-
-## Troubleshooting
-
-### "Edge TTS server not responding"
-- Make sure the server is running: `npm start` in the openai-edge-tts directory
-- Check it's accessible: Open http://localhost:5050 in your browser
-
-### "FFmpeg not found"
-- Verify FFmpeg is installed: `ffmpeg -version`
-- Add FFmpeg to your PATH environment variable
-
-### "Invalid API key"
-- Check your config.yaml has the correct API key
-- If using the default openai-edge-tts server, any non-empty string works
-
-### Voice doesn't match speaker
-- Verify speaker names in SRT match those in config.yaml (case-sensitive)
-- Use the default_voice for unlabeled dialogue
-
-## Next Steps
-
-- Run `srt-voiceover --list-voices` to see all 400+ available voices
-- See [README.md](README.md) for advanced usage
-- Try different speed settings (0.8-1.2 works well for most content)
-- Experiment with timing tolerance for faster processing
 
 ## Common Use Cases
 
-### 🎬 Video Dubbing
-```bash
-# Extract audio, transcribe, and re-voice
-srt-voiceover extract-audio video.mp4 -o audio.wav
-srt-voiceover revoice audio.wav -o new_audio.mp3 --keep-srt -c config.yaml
+### Video Dubbing
 
-# Merge with ffmpeg
-ffmpeg -i video.mp4 -i new_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 output.mp4
+```bash
+# 1. Extract and re-voice with perfect timing
+srt-voiceover revoice video.mp4 -o dubbed_audio.mp3 --use-word-timing --elastic-timing
+
+# 2. Merge audio back into video
+ffmpeg -i video.mp4 -i dubbed_audio.mp3 -c:v copy -map 0:v:0 -map 1:a:0 output.mp4
 ```
 
-### 🎙️ Podcast Re-voicing
+### Fix Transcription Errors
+
 ```bash
-srt-voiceover revoice podcast.mp3 -o ai_version.mp3 -c config.yaml
+# 1. Transcribe and save word timings
+srt-voiceover transcribe video.mp4 -o transcript.srt --save-word-timings
+
+# 2. Edit transcript.srt to fix errors (use any text editor)
+
+# 3. Generate corrected voiceover
+srt-voiceover voiceover transcript.srt -o fixed.mp3 \
+  --word-timings transcript_word_timings.json --elastic-timing
 ```
 
-### 📝 Generate Subtitles
+### Multi-Speaker Content
+
 ```bash
-srt-voiceover transcribe video_audio.mp3 -o subtitles.srt
+# With automatic speaker detection
+srt-voiceover revoice podcast.mp3 -o new_voices.mp3 --use-pyannote --use-word-timing
+
+# Note: Requires HF_TOKEN environment variable
+# Get token at: https://huggingface.co/settings/tokens
 ```
 
-### ⚡ Quick Test
+## Voice Selection
+
 ```bash
-srt-voiceover examples/sample.srt -o test.mp3 -c examples/config.yaml
+# List all 400+ available voices
+srt-voiceover --list-voices
+
+# Use specific voice
+srt-voiceover voiceover script.srt -o output.mp3 --default-voice "en-US-JennyNeural"
 ```
 
----
+## Configuration File (Optional)
 
-**Next Steps:**
-- 📖 Read the full [README.md](README.md) for detailed documentation
-- 🤝 Check [CONTRIBUTING.md](CONTRIBUTING.md) to contribute
-- 🐛 Report issues on [GitHub](https://github.com/leakydata/srt-voiceover/issues)
+Create `config.yaml`:
 
-**Happy dubbing!** 🎉
+```yaml
+default_voice: "en-US-AndrewMultilingualNeural"
+rate: "+0%"
+volume: "+0%"
+use_word_timing: true
+elastic_timing: true
+```
 
+Use it:
+
+```bash
+srt-voiceover revoice video.mp4 -o output.mp3 -c config.yaml
+```
+
+## GPU Acceleration (Optional)
+
+For 5-10x faster processing on NVIDIA GPUs:
+
+```bash
+# 1. Install CUDA PyTorch
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# 2. Install CUDA features
+pip install srt-voiceover[cuda]
+
+# 3. Use normally (GPU detected automatically)
+srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing
+```
+
+## Timing Modes Explained
+
+| Mode | Command | Best For |
+|------|---------|----------|
+| **Default** | (no flags) | Audio-only content, fastest |
+| **Word-Level** | `--use-word-timing` | Screen recordings, tutorials |
+| **Elastic** | `--use-word-timing --elastic-timing` | Video dubbing, lip-sync |
+
+**Recommendation:** Use `--use-word-timing --elastic-timing` for best quality video dubbing.
+
+## Next Steps
+
+- **Full Documentation:** See [DOCUMENTATION.md](DOCUMENTATION.md)
+- **Voice List:** Run `srt-voiceover --list-voices`
+- **Config Example:** Run `srt-voiceover --init-config`
+- **Help:** Run `srt-voiceover --help`
+
+## Getting Help
+
+- GitHub Issues: https://github.com/leakydata/srt-voiceover/issues
+- Discussions: https://github.com/leakydata/srt-voiceover/discussions
