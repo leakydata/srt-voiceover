@@ -188,7 +188,7 @@ Examples:
     transcribe_parser.add_argument('--whisper-url', help='Whisper API URL')
     transcribe_parser.add_argument('--api-key', help='API key for authentication')
     transcribe_parser.add_argument('--language', help='Language code (en, es, fr, etc.)')
-    transcribe_parser.add_argument('--model', default='whisper-1', help='Whisper model name')
+    transcribe_parser.add_argument('--model', default='base', help='Whisper model name (base, small, medium, large for local; whisper-1 for API)')
     transcribe_parser.add_argument('--multi-speaker', action='store_true', 
                                     help='Enable basic multi-speaker detection (default: single speaker)')
     transcribe_parser.add_argument('--use-pyannote', action='store_true',

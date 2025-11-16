@@ -316,7 +316,12 @@ If no speaker is specified, the default voice will be used.
 
 ## 🎤 Available Voices
 
-See [edgetts_voices_list.md](edgetts_voices_list.md) for a complete list of available voices.
+To see all available Edge TTS voices, run:
+```bash
+srt-voiceover --list-voices
+```
+
+This will display all 400+ voices organized by language, including voice names, gender, and supported features.
 
 Popular voices:
 - **English (US)**: `en-US-AndrewMultilingualNeural`, `en-US-EmmaMultilingualNeural`, `en-US-AriaNeural`, `en-US-GuyNeural`

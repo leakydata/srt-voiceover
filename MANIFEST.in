@@ -4,5 +4,4 @@ include requirements.txt
 include pyproject.toml
 recursive-include examples *.yaml *.srt *.json
 recursive-include src *.py
-include edgetts_voices_list.md
 

@@ -138,7 +138,7 @@ That's it! 🎉
 
 ## Next Steps
 
-- Check out [edgetts_voices_list.md](edgetts_voices_list.md) for all available voices
+- Run `srt-voiceover --list-voices` to see all 400+ available voices
 - See [README.md](README.md) for advanced usage
 - Try different speed settings (0.8-1.2 works well for most content)
 - Experiment with timing tolerance for faster processing

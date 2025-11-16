@@ -50,4 +50,4 @@ speaker_voices:
   Speaker A: "en-US-AndrewMultilingualNeural"   # Auto-detected
   Speaker B: "en-US-EmmaMultilingualNeural"     # Auto-detected
   
-# See edgetts_voices_list.md for complete list of available voices
+# Run 'srt-voiceover --list-voices' to see all 400+ available voices

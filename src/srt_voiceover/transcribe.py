@@ -4,6 +4,7 @@ Audio transcription to SRT with speaker diarization support
 
 import io
 import os
+import tempfile
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple
 from pydub import AudioSegment
@@ -525,7 +526,7 @@ def audio_to_voiceover_workflow(
     output_audio: str,
     speaker_voices: Optional[Dict[str, str]] = None,
     default_voice: str = "en-US-AndrewMultilingualNeural",
-    temp_srt: str = "temp_transcription.srt",
+    temp_srt: Optional[str] = None,
     language: Optional[str] = None,
     rate: str = "+0%",
     volume: str = "+0%",
@@ -551,7 +552,7 @@ def audio_to_voiceover_workflow(
         output_audio: Output audio file path
         speaker_voices: Dictionary mapping detected speakers to voices
         default_voice: Default voice
-        temp_srt: Temporary SRT file path
+        temp_srt: Temporary SRT file path (auto-generated if None)
         language: Optional language for transcription
         rate: Speech rate (e.g., "+0%", "-50%", "+100%")
         volume: Volume level (e.g., "+0%", "-50%", "+100%")
@@ -566,6 +567,12 @@ def audio_to_voiceover_workflow(
         Tuple of (srt_path, output_audio_path)
     """
     from .core import build_voiceover_from_srt
+    
+    # Generate unique temp file if not provided
+    if temp_srt is None:
+        # Create temp file in system temp directory with unique name
+        temp_fd, temp_srt = tempfile.mkstemp(suffix='.srt', prefix='srt_voiceover_')
+        os.close(temp_fd)  # Close the file descriptor, we just need the path
     
     if verbose:
         print("=" * 60)
