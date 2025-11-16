@@ -222,7 +222,15 @@ def extract_word_timings(whisper_result: Dict) -> List[Dict]:
     return word_timings
 
 
-def calculate_segment_rate(segment_start_s: float, segment_end_s: float, segment_text: str, word_timings: List[Dict]) -> str:
+def calculate_segment_rate(
+    segment_start_s: float, 
+    segment_end_s: float, 
+    segment_text: str, 
+    word_timings: List[Dict],
+    elastic_timing: bool = False,
+    prev_segment_end_s: Optional[float] = None,
+    next_segment_start_s: Optional[float] = None
+) -> Tuple[str, float, float]:
     """
     Calculate optimal TTS rate for a segment based on original word timing.
     
@@ -231,9 +239,12 @@ def calculate_segment_rate(segment_start_s: float, segment_end_s: float, segment
         segment_end_s: Segment end time in seconds
         segment_text: Text of the segment
         word_timings: List of word timing dicts from extract_word_timings()
+        elastic_timing: Enable elastic timing window expansion
+        prev_segment_end_s: End time of previous segment (for elastic)
+        next_segment_start_s: Start time of next segment (for elastic)
         
     Returns:
-        Edge TTS rate string like "+25%" or "-15%"
+        Tuple of (rate string, adjusted_start, adjusted_end)
     """
     # Find words within this segment's time range
     segment_words = [
@@ -242,31 +253,69 @@ def calculate_segment_rate(segment_start_s: float, segment_end_s: float, segment
     ]
     
     if not segment_words:
-        return "+0%"  # Fallback to default
+        return "+0%", segment_start_s, segment_end_s
     
     # Calculate speaking rate (words per minute)
     word_count = len(segment_words)
     duration_s = segment_end_s - segment_start_s
     
     if duration_s <= 0:
-        return "+0%"
+        return "+0%", segment_start_s, segment_end_s
     
     duration_minutes = duration_s / 60.0
     wpm = word_count / duration_minutes
     
     # Edge TTS baseline is approximately 150 WPM for natural speech
-    # Adjust rate to match original speaking pace
     baseline_wpm = 150
     rate_multiplier = wpm / baseline_wpm
-    
-    # Convert to percentage
     rate_percent = int((rate_multiplier - 1.0) * 100)
     
+    # Elastic timing: If speed needed is high, try to expand window
+    adjusted_start = segment_start_s
+    adjusted_end = segment_end_s
+    
+    if elastic_timing and rate_percent > 30:
+        # Calculate how much time we need to reduce speed to 30%
+        target_multiplier = 1.30  # +30%
+        needed_duration = word_count / (baseline_wpm * target_multiplier) * 60
+        expansion_needed = needed_duration - duration_s
+        
+        # Limit expansion to max 500ms
+        expansion_needed = min(expansion_needed, 0.5)
+        
+        if expansion_needed > 0:
+            # Try to borrow time from adjacent silences
+            gap_before = segment_start_s - prev_segment_end_s if prev_segment_end_s else 0
+            gap_after = next_segment_start_s - segment_end_s if next_segment_start_s else 0
+            
+            # Distribute expansion between before/after based on available gaps
+            total_gap = gap_before + gap_after
+            if total_gap > expansion_needed:
+                # We have enough gap space
+                if total_gap > 0:
+                    ratio_before = gap_before / total_gap
+                    expand_before = expansion_needed * ratio_before
+                    expand_after = expansion_needed * (1 - ratio_before)
+                    
+                    # Don't take all the gap (leave at least 100ms)
+                    expand_before = min(expand_before, gap_before - 0.1) if gap_before > 0.1 else 0
+                    expand_after = min(expand_after, gap_after - 0.1) if gap_after > 0.1 else 0
+                    
+                    adjusted_start = segment_start_s - expand_before
+                    adjusted_end = segment_end_s + expand_after
+                    
+                    # Recalculate with expanded window
+                    new_duration = adjusted_end - adjusted_start
+                    new_duration_minutes = new_duration / 60.0
+                    wpm = word_count / new_duration_minutes
+                    rate_multiplier = wpm / baseline_wpm
+                    rate_percent = int((rate_multiplier - 1.0) * 100)
+    
     # Clamp to REASONABLE limits for natural-sounding speech
-    # -20% to +40% prevents extreme speeds that sound rushed/robotic
     rate_percent = max(-20, min(40, rate_percent))
     
-    return f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
+    rate_str = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
+    return rate_str, adjusted_start, adjusted_end
 
 
 def _transcribe_via_api(
