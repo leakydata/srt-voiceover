@@ -360,36 +360,30 @@ def build_voiceover_from_srt(
     if speaker_voices is None:
         speaker_voices = {}
     
-    # Import calculate_segment_rate if word timings are provided
+    # Import word timing functions if needed
     if word_timings:
-        from .transcribe import calculate_segment_rate
+        from .transcribe import calculate_segment_rate, smooth_segment_rates
     
     subs = pysrt.open(srt_path, encoding="utf-8")
-
-    final_audio = AudioSegment.silent(duration=0)
-    current_position_ms = 0
-
-    for idx, sub in enumerate(subs):
-        raw_text = sub.text.strip()
-        if not raw_text:
-            continue
-
-        speaker, cleaned_text = parse_speaker_and_text(raw_text)
-        if not cleaned_text:
-            continue
-
-        voice_for_segment = get_voice_for_speaker(speaker, speaker_voices, default_voice)
-
-        start_ms = srt_time_to_milliseconds(sub.start)
-        end_ms = srt_time_to_milliseconds(sub.end)
-        target_duration = end_ms - start_ms
-
-        # Calculate dynamic rate if word timings are available
-        segment_rate = rate  # Default to global rate
-        adjusted_start_ms = start_ms
-        adjusted_end_ms = end_ms
-        
-        if word_timings:
+    
+    # ==============================================================
+    # PHASE 1: Calculate raw rates for all segments (if using word timing)
+    # ==============================================================
+    segment_data = []  # Store all segment info for two-pass processing
+    
+    if word_timings:
+        raw_rates = []
+        for idx, sub in enumerate(subs):
+            raw_text = sub.text.strip()
+            if not raw_text:
+                continue
+            
+            speaker, cleaned_text = parse_speaker_and_text(raw_text)
+            if not cleaned_text:
+                continue
+            
+            start_ms = srt_time_to_milliseconds(sub.start)
+            end_ms = srt_time_to_milliseconds(sub.end)
             segment_start_s = start_ms / 1000.0
             segment_end_s = end_ms / 1000.0
             
@@ -402,7 +396,7 @@ def build_voiceover_from_srt(
                 if idx < len(subs) - 1:
                     next_segment_start_s = srt_time_to_milliseconds(subs[idx+1].start) / 1000.0
             
-            result = calculate_segment_rate(
+            rate_percent, adjusted_start_s, adjusted_end_s = calculate_segment_rate(
                 segment_start_s,
                 segment_end_s,
                 cleaned_text,
@@ -411,10 +405,81 @@ def build_voiceover_from_srt(
                 prev_segment_end_s=prev_segment_end_s,
                 next_segment_start_s=next_segment_start_s
             )
-            segment_rate, adjusted_start_s, adjusted_end_s = result
-            adjusted_start_ms = int(adjusted_start_s * 1000)
-            adjusted_end_ms = int(adjusted_end_s * 1000)
+            
+            raw_rates.append(rate_percent)
+            segment_data.append({
+                'idx': idx,
+                'sub': sub,
+                'speaker': speaker,
+                'cleaned_text': cleaned_text,
+                'start_ms': start_ms,
+                'end_ms': end_ms,
+                'adjusted_start_s': adjusted_start_s,
+                'adjusted_end_s': adjusted_end_s,
+                'raw_rate': rate_percent
+            })
+        
+        # Apply smoothing to prevent jarring rate changes
+        smoothed_rates = smooth_segment_rates(raw_rates, max_change_per_segment=15)
+        
+        # Update segment data with smoothed rates
+        for i, seg_data in enumerate(segment_data):
+            seg_data['rate_percent'] = smoothed_rates[i]
+    
+    # ==============================================================
+    # PHASE 2: Generate audio with (smoothed) rates
+    # ==============================================================
+    final_audio = AudioSegment.silent(duration=0)
+    current_position_ms = 0
+
+    # If not using word timings, build segment_data on the fly
+    if not word_timings:
+        for idx, sub in enumerate(subs):
+            raw_text = sub.text.strip()
+            if not raw_text:
+                continue
+            
+            speaker, cleaned_text = parse_speaker_and_text(raw_text)
+            if not cleaned_text:
+                continue
+            
+            start_ms = srt_time_to_milliseconds(sub.start)
+            end_ms = srt_time_to_milliseconds(sub.end)
+            
+            segment_data.append({
+                'idx': idx,
+                'sub': sub,
+                'speaker': speaker,
+                'cleaned_text': cleaned_text,
+                'start_ms': start_ms,
+                'end_ms': end_ms,
+                'adjusted_start_s': start_ms / 1000.0,
+                'adjusted_end_s': end_ms / 1000.0,
+                'rate_percent': None  # Use global rate
+            })
+    
+    # Now process all segments
+    for seg_data in segment_data:
+        idx = seg_data['idx']
+        speaker = seg_data['speaker']
+        cleaned_text = seg_data['cleaned_text']
+        start_ms = seg_data['start_ms']
+        end_ms = seg_data['end_ms']
+        
+        voice_for_segment = get_voice_for_speaker(speaker, speaker_voices, default_voice)
+        
+        # Determine rate and timing
+        if word_timings:
+            rate_percent = seg_data['rate_percent']
+            segment_rate = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
+            adjusted_start_ms = int(seg_data['adjusted_start_s'] * 1000)
+            adjusted_end_ms = int(seg_data['adjusted_end_s'] * 1000)
             target_duration = adjusted_end_ms - adjusted_start_ms
+        else:
+            segment_rate = rate
+            adjusted_start_ms = start_ms
+            adjusted_end_ms = end_ms
+            target_duration = end_ms - start_ms
         
         # Handle gap/overlap with elastic timing adjustments
         if adjusted_start_ms > current_position_ms:
@@ -429,13 +494,20 @@ def build_voiceover_from_srt(
                 current_position_ms = adjusted_start_ms
         
         if verbose:
+            total_segments = len(segment_data)
+            segment_num = segment_data.index(seg_data) + 1
             print(
-                f"Processing subtitle {idx + 1}/{len(subs)} - "
+                f"Processing subtitle {segment_num}/{total_segments} - "
                 f"Speaker: {speaker} Voice: {voice_for_segment}"
             )
             print(f"   Text: {repr(cleaned_text)}")
             if word_timings:
-                print(f"   Dynamic rate: {segment_rate}")
+                # Show smoothed rate (and raw if different)
+                if 'raw_rate' in seg_data and seg_data['raw_rate'] != seg_data['rate_percent']:
+                    raw_rate_str = f"+{seg_data['raw_rate']}%" if seg_data['raw_rate'] >= 0 else f"{seg_data['raw_rate']}%"
+                    print(f"   Dynamic rate: {segment_rate} (smoothed from {raw_rate_str})")
+                else:
+                    print(f"   Dynamic rate: {segment_rate}")
 
         segment = synthesize_speech_segment(
             text=cleaned_text,
