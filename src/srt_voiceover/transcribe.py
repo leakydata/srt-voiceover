@@ -45,6 +45,7 @@ def transcribe_audio_to_srt(
     device: str = "cpu",
     # Word-level timing for dynamic rate matching (optional)
     use_word_timing: bool = False,
+    save_word_timings_path: Optional[str] = None,
 ):
     """
     Transcribe audio file to SRT format with timestamps using OpenAI Whisper.
