@@ -170,6 +170,15 @@ def transcribe_audio_to_srt(
         print(f"[OK] SRT file saved: {output_srt_path}")
         print(f"   Total segments: {len(subs)}")
     
+    # Save word timings to JSON file if requested
+    if save_word_timings_path and word_timings:
+        import json
+        with open(save_word_timings_path, 'w', encoding='utf-8') as f:
+            json.dump(word_timings, f, indent=2, ensure_ascii=False)
+        if verbose:
+            print(f"[OK] Word timings saved: {save_word_timings_path}")
+            print(f"   You can now edit the SRT file and use these timings for voiceover generation")
+    
     # Return SRT path and optionally word timings
     if use_word_timing:
         return output_srt_path, word_timings
