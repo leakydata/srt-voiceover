@@ -425,6 +425,13 @@ def build_voiceover_from_srt(
         # Update segment data with smoothed rates
         for i, seg_data in enumerate(segment_data):
             seg_data['rate_percent'] = smoothed_rates[i]
+        
+        if verbose:
+            # Show smoothing summary
+            changes = sum(1 for i in range(len(raw_rates)) if raw_rates[i] != smoothed_rates[i])
+            if changes > 0:
+                print(f"\n[SMOOTHING] Applied rate smoothing to {changes}/{len(raw_rates)} segments for natural transitions")
+                print(f"            Max rate change per segment: 15%\n")
     
     # ==============================================================
     # PHASE 2: Generate audio with (smoothed) rates
