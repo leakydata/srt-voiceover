@@ -43,7 +43,9 @@ def transcribe_audio_to_srt(
     # Professional diarization (optional - requires pyannote.audio)
     use_pyannote: bool = False,
     device: str = "cpu",
-) -> str:
+    # Word-level timing for dynamic rate matching (optional)
+    use_word_timing: bool = False,
+):
     """
     Transcribe audio file to SRT format with timestamps using OpenAI Whisper.
     
@@ -94,10 +96,17 @@ def transcribe_audio_to_srt(
                 "pip install openai-whisper\n\n"
                 "Or use API mode with use_api=True if you have access to OpenAI API"
             )
-        result = _transcribe_local(audio_path, model, language, verbose, device)
+        result = _transcribe_local(audio_path, model, language, verbose, device, word_timestamps=use_word_timing)
     
     if verbose:
         print(f"[OK] Transcription complete!")
+    
+    # Extract word timings if requested
+    word_timings = None
+    if use_word_timing and not use_api:
+        word_timings = extract_word_timings(result)
+        if verbose and word_timings:
+            print(f"[OK] Extracted {len(word_timings)} word-level timestamps")
     
     # Convert to SRT format
     subs = pysrt.SubRipFile()
@@ -160,10 +169,14 @@ def transcribe_audio_to_srt(
         print(f"[OK] SRT file saved: {output_srt_path}")
         print(f"   Total segments: {len(subs)}")
     
-    return output_srt_path
+    # Return SRT path and optionally word timings
+    if use_word_timing:
+        return output_srt_path, word_timings
+    else:
+        return output_srt_path
 
 
-def _transcribe_local(audio_path: str, model: str, language: Optional[str], verbose: bool, device: str = "cpu") -> Dict:
+def _transcribe_local(audio_path: str, model: str, language: Optional[str], verbose: bool, device: str = "cpu", word_timestamps: bool = False) -> Dict:
     """Transcribe using local Whisper model."""
     if verbose:
         print(f"Loading Whisper model '{model}'... (first run will download the model)")
@@ -175,14 +188,84 @@ def _transcribe_local(audio_path: str, model: str, language: Optional[str], verb
         device_msg = f"on {device.upper()}" if device == "cuda" else "on CPU"
         print(f"Transcribing audio {device_msg}... (this may take a while)")
     
-    # Transcribe
-    transcribe_options = {}
+    # Transcribe with optional word timestamps
+    transcribe_options = {'word_timestamps': word_timestamps}
     if language:
         transcribe_options['language'] = language
     
     result = whisper_model.transcribe(audio_path, **transcribe_options)
     
     return result
+
+
+def extract_word_timings(whisper_result: Dict) -> List[Dict]:
+    """
+    Extract word-level timing data from Whisper result.
+    
+    Args:
+        whisper_result: Result from Whisper transcribe() with word_timestamps=True
+        
+    Returns:
+        List of word timing dicts with 'word', 'start', 'end' keys
+    """
+    word_timings = []
+    
+    for segment in whisper_result.get('segments', []):
+        if 'words' in segment:
+            for word_info in segment['words']:
+                word_timings.append({
+                    'word': word_info.get('word', '').strip(),
+                    'start': word_info.get('start', 0.0),
+                    'end': word_info.get('end', 0.0)
+                })
+    
+    return word_timings
+
+
+def calculate_segment_rate(segment_start_s: float, segment_end_s: float, segment_text: str, word_timings: List[Dict]) -> str:
+    """
+    Calculate optimal TTS rate for a segment based on original word timing.
+    
+    Args:
+        segment_start_s: Segment start time in seconds
+        segment_end_s: Segment end time in seconds
+        segment_text: Text of the segment
+        word_timings: List of word timing dicts from extract_word_timings()
+        
+    Returns:
+        Edge TTS rate string like "+25%" or "-15%"
+    """
+    # Find words within this segment's time range
+    segment_words = [
+        w for w in word_timings
+        if segment_start_s <= w['start'] < segment_end_s
+    ]
+    
+    if not segment_words:
+        return "+0%"  # Fallback to default
+    
+    # Calculate speaking rate (words per minute)
+    word_count = len(segment_words)
+    duration_s = segment_end_s - segment_start_s
+    
+    if duration_s <= 0:
+        return "+0%"
+    
+    duration_minutes = duration_s / 60.0
+    wpm = word_count / duration_minutes
+    
+    # Edge TTS baseline is approximately 150 WPM for natural speech
+    # Adjust rate to match original speaking pace
+    baseline_wpm = 150
+    rate_multiplier = wpm / baseline_wpm
+    
+    # Convert to percentage (-50% to +100% for Edge TTS)
+    rate_percent = int((rate_multiplier - 1.0) * 100)
+    
+    # Clamp to safe Edge TTS limits
+    rate_percent = max(-50, min(100, rate_percent))
+    
+    return f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
 
 
 def _transcribe_via_api(
@@ -542,6 +625,7 @@ def audio_to_voiceover_workflow(
     use_pyannote: bool = False,
     device: str = "cpu",
     enable_time_stretch: bool = False,
+    use_word_timing: bool = False,
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
@@ -585,7 +669,8 @@ def audio_to_voiceover_workflow(
     if verbose:
         print("Step 1/2: Transcribing audio to SRT...")
     
-    srt_path = transcribe_audio_to_srt(
+    # Transcribe with optional word timing
+    transcribe_result = transcribe_audio_to_srt(
         audio_path=input_audio,
         output_srt_path=temp_srt,
         model=whisper_model,
@@ -597,11 +682,21 @@ def audio_to_voiceover_workflow(
         api_key=whisper_api_key,
         use_pyannote=use_pyannote,
         device=device,
+        use_word_timing=use_word_timing,
     )
+    
+    # Handle return value (string or tuple)
+    if use_word_timing:
+        srt_path, word_timings = transcribe_result
+    else:
+        srt_path = transcribe_result
+        word_timings = None
     
     if verbose:
         print()
         print("Step 2/2: Generating new voiceover...")
+        if use_word_timing:
+            print("Using word-level timing for dynamic rate matching...")
     
     # Step 2: Re-voice
     build_voiceover_from_srt(
@@ -613,6 +708,7 @@ def audio_to_voiceover_workflow(
         volume=volume,
         pitch=pitch,
         enable_time_stretch=enable_time_stretch,
+        word_timings=word_timings,
         verbose=verbose,
     )
     

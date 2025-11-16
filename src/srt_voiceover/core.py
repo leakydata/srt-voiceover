@@ -333,6 +333,7 @@ def build_voiceover_from_srt(
     pitch: str = "+0Hz",
     timing_tolerance_ms: int = 150,
     enable_time_stretch: bool = False,
+    word_timings: Optional[list] = None,
     verbose: bool = True,
 ) -> None:
     """
@@ -343,11 +344,12 @@ def build_voiceover_from_srt(
         output_audio_path: Path for output audio file
         speaker_voices: Dictionary mapping speaker names to voice IDs
         default_voice: Default voice for unlabeled speakers
-        rate: Speech rate (e.g., "+0%", "-50%", "+100%")
+        rate: Speech rate (e.g., "+0%", "-50%", "+100%") - ignored if word_timings provided
         volume: Volume level (e.g., "+0%", "-50%", "+100%")
         pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
         timing_tolerance_ms: Tolerance for timing alignment in milliseconds
         enable_time_stretch: Use smart time-stretching for better lip-sync (requires librosa)
+        word_timings: Optional word-level timing data for dynamic rate matching
         verbose: Print progress information
         
     Raises:
@@ -355,6 +357,10 @@ def build_voiceover_from_srt(
     """
     if speaker_voices is None:
         speaker_voices = {}
+    
+    # Import calculate_segment_rate if word timings are provided
+    if word_timings:
+        from .transcribe import calculate_segment_rate
     
     subs = pysrt.open(srt_path, encoding="utf-8")
 
@@ -381,17 +387,31 @@ def build_voiceover_from_srt(
             final_audio += AudioSegment.silent(duration=gap)
             current_position_ms = start_ms
 
+        # Calculate dynamic rate if word timings are available
+        segment_rate = rate  # Default to global rate
+        if word_timings:
+            segment_start_s = start_ms / 1000.0
+            segment_end_s = end_ms / 1000.0
+            segment_rate = calculate_segment_rate(
+                segment_start_s,
+                segment_end_s,
+                cleaned_text,
+                word_timings
+            )
+        
         if verbose:
             print(
                 f"Processing subtitle {idx + 1}/{len(subs)} - "
                 f"Speaker: {speaker} Voice: {voice_for_segment}"
             )
             print(f"   Text: {repr(cleaned_text)}")
+            if word_timings:
+                print(f"   Dynamic rate: {segment_rate}")
 
         segment = synthesize_speech_segment(
             text=cleaned_text,
             voice=voice_for_segment,
-            rate=rate,
+            rate=segment_rate,  # Use calculated rate
             volume=volume,
             pitch=pitch,
         )

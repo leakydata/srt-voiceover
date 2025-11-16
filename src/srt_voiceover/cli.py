@@ -219,6 +219,8 @@ Examples:
                                  help='Device to use for transcription/diarization (default: auto)')
     revoice_parser.add_argument('--enable-time-stretch', action='store_true',
                                  help='Use smart time-stretching for better lip-sync (requires: pip install librosa soundfile)')
+    revoice_parser.add_argument('--use-word-timing', action='store_true',
+                                 help='Use word-level timing for dynamic rate matching (recommended for best quality)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -407,6 +409,7 @@ def handle_revoice_command(args):
     volume = args.volume or config.get('volume', '+0%')
     pitch = args.pitch or config.get('pitch', '+0Hz')
     enable_time_stretch = args.enable_time_stretch or config.get('enable_time_stretch', False)
+    use_word_timing = args.use_word_timing or config.get('use_word_timing', False)
     speaker_voices = config.get('speaker_voices', {})
     default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
     
