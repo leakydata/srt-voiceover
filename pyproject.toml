@@ -51,6 +51,12 @@ diarization = [
     "torchaudio>=2.0.0",
 ]
 
+# Smart time-stretching for better lip-sync (works on CPU and GPU)
+timestretch = [
+    "librosa>=0.10.0",
+    "soundfile>=0.12.1",
+]
+
 # GPU/CUDA support - install PyTorch with CUDA first, then this adds the features
 # Users should run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 # Then: pip install srt-voiceover[cuda]
@@ -65,6 +71,8 @@ all = [
     "pyannote.audio>=3.1.0",
     "torch>=2.0.0",
     "torchaudio>=2.0.0",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.1",
 ]
 
 dev = [

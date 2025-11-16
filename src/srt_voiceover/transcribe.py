@@ -541,6 +541,7 @@ def audio_to_voiceover_workflow(
     # Professional diarization (optional - requires HF_TOKEN env var)
     use_pyannote: bool = False,
     device: str = "cpu",
+    enable_time_stretch: bool = False,
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
@@ -611,6 +612,7 @@ def audio_to_voiceover_workflow(
         rate=rate,
         volume=volume,
         pitch=pitch,
+        enable_time_stretch=enable_time_stretch,
         verbose=verbose,
     )
     

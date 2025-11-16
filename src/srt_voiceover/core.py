@@ -3,7 +3,9 @@ Core functionality for SRT to voiceover conversion
 """
 
 import io
+import os
 import asyncio
+import tempfile
 import pysrt
 from pydub import AudioSegment
 from typing import Optional, Dict, Tuple
@@ -13,6 +15,13 @@ try:
     EDGE_TTS_AVAILABLE = True
 except ImportError:
     EDGE_TTS_AVAILABLE = False
+
+try:
+    import librosa
+    import soundfile as sf
+    LIBROSA_AVAILABLE = True
+except ImportError:
+    LIBROSA_AVAILABLE = False
 
 
 def srt_time_to_milliseconds(t) -> int:
@@ -195,6 +204,125 @@ def align_segment_duration(
         return segment[:target_duration_ms]
 
 
+def align_segment_duration_smart(
+    segment: AudioSegment,
+    target_duration_ms: int,
+    tolerance_ms: int = 150,
+    enable_time_stretch: bool = True,
+    max_stretch_ratio: float = 1.25,
+    min_stretch_ratio: float = 0.80,
+    verbose: bool = False
+) -> AudioSegment:
+    """
+    Align segment using smart time-stretching to preserve natural speech.
+    Falls back to padding/trimming if stretching isn't available or appropriate.
+    
+    Time-stretching changes duration WITHOUT changing pitch, making speech
+    sound natural at different speeds. Better for video dubbing/lip-sync.
+    
+    Works on both CPU and GPU systems (CPU-only processing).
+    
+    Args:
+        segment: AudioSegment to align
+        target_duration_ms: Target duration in milliseconds
+        tolerance_ms: Tolerance - within this, no adjustment needed
+        enable_time_stretch: Whether to use time-stretching (requires librosa)
+        max_stretch_ratio: Maximum speedup (1.25 = 25% faster)
+        min_stretch_ratio: Maximum slowdown (0.80 = 20% slower)
+        verbose: Print stretch info
+        
+    Returns:
+        Aligned AudioSegment
+    """
+    if target_duration_ms <= 0:
+        return segment
+    
+    current_duration_ms = len(segment)
+    if current_duration_ms == 0:
+        return segment
+    
+    diff = target_duration_ms - current_duration_ms
+    
+    # Within tolerance? Return as-is
+    if abs(diff) <= tolerance_ms:
+        return segment
+    
+    # Calculate stretch ratio
+    stretch_ratio = target_duration_ms / current_duration_ms
+    
+    # Check if time-stretching is appropriate
+    should_stretch = (
+        enable_time_stretch and 
+        LIBROSA_AVAILABLE and
+        min_stretch_ratio <= stretch_ratio <= max_stretch_ratio
+    )
+    
+    if not should_stretch:
+        # Fall back to padding/trimming
+        if verbose and enable_time_stretch and not LIBROSA_AVAILABLE:
+            print("  [INFO] librosa not installed, using padding/trimming")
+        elif verbose and stretch_ratio > max_stretch_ratio:
+            print(f"  [INFO] Stretch ratio {stretch_ratio:.2f} too high, using padding")
+        elif verbose and stretch_ratio < min_stretch_ratio:
+            print(f"  [INFO] Stretch ratio {stretch_ratio:.2f} too low, using trimming")
+        
+        return align_segment_duration(segment, target_duration_ms, tolerance_ms)
+    
+    # Apply time-stretching with librosa
+    try:
+        # Export to temporary WAV file
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_in:
+            segment.export(tmp_in.name, format='wav')
+            temp_input = tmp_in.name
+        
+        try:
+            # Load audio
+            y, sr = librosa.load(temp_input, sr=None)
+            
+            # Apply time-stretch (rate > 1.0 = faster, < 1.0 = slower)
+            # librosa uses 'rate' parameter opposite to our stretch_ratio
+            # Our ratio: target/current - librosa rate: current/target
+            librosa_rate = 1.0 / stretch_ratio
+            y_stretched = librosa.effects.time_stretch(y, rate=librosa_rate)
+            
+            # Save stretched audio
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_out:
+                temp_output = tmp_out.name
+            
+            sf.write(temp_output, y_stretched, sr)
+            
+            # Load back into pydub
+            stretched_segment = AudioSegment.from_wav(temp_output)
+            
+            # Cleanup temp files
+            os.unlink(temp_input)
+            os.unlink(temp_output)
+            
+            if verbose:
+                stretch_pct = (stretch_ratio - 1.0) * 100
+                direction = "faster" if stretch_ratio > 1.0 else "slower"
+                print(f"  [STRETCH] {abs(stretch_pct):.1f}% {direction} "
+                      f"({current_duration_ms}ms -> {len(stretched_segment)}ms)")
+            
+            return stretched_segment
+            
+        except Exception as e:
+            # Cleanup on error
+            if os.path.exists(temp_input):
+                os.unlink(temp_input)
+            if 'temp_output' in locals() and os.path.exists(temp_output):
+                os.unlink(temp_output)
+            raise e
+            
+    except Exception as e:
+        if verbose:
+            print(f"  [WARNING] Time-stretch failed: {e}")
+            print(f"  [INFO] Falling back to padding/trimming")
+        
+        # Fallback to simple method
+        return align_segment_duration(segment, target_duration_ms, tolerance_ms)
+
+
 def build_voiceover_from_srt(
     srt_path: str,
     output_audio_path: str,
@@ -204,6 +332,7 @@ def build_voiceover_from_srt(
     volume: str = "+0%",
     pitch: str = "+0Hz",
     timing_tolerance_ms: int = 150,
+    enable_time_stretch: bool = False,
     verbose: bool = True,
 ) -> None:
     """
@@ -218,6 +347,7 @@ def build_voiceover_from_srt(
         volume: Volume level (e.g., "+0%", "-50%", "+100%")
         pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
         timing_tolerance_ms: Tolerance for timing alignment in milliseconds
+        enable_time_stretch: Use smart time-stretching for better lip-sync (requires librosa)
         verbose: Print progress information
         
     Raises:
@@ -267,7 +397,16 @@ def build_voiceover_from_srt(
         )
 
         if target_duration > 0:
-            segment = align_segment_duration(segment, target_duration, timing_tolerance_ms)
+            if enable_time_stretch:
+                segment = align_segment_duration_smart(
+                    segment, 
+                    target_duration, 
+                    timing_tolerance_ms,
+                    enable_time_stretch=True,
+                    verbose=verbose
+                )
+            else:
+                segment = align_segment_duration(segment, target_duration, timing_tolerance_ms)
 
         final_audio += segment
         current_position_ms += len(segment)

@@ -113,6 +113,7 @@ def create_sample_config(output_path: str, format: str = 'yaml') -> None:
         "volume": "+0%",
         "pitch": "+0Hz",
         "timing_tolerance_ms": 150,
+        "enable_time_stretch": False,
         "whisper_model": "base",
         "speaker_voices": {
             "Nathan": "en-US-AndrewMultilingualNeural",
@@ -178,6 +179,8 @@ Examples:
     voiceover_parser.add_argument('--volume', help='Volume level (e.g., "+0%%", "-50%%", "+100%%")')
     voiceover_parser.add_argument('--pitch', help='Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")')
     voiceover_parser.add_argument('--tolerance', type=int, help='Timing tolerance in milliseconds (default: 150)')
+    voiceover_parser.add_argument('--enable-time-stretch', action='store_true',
+                                    help='Use smart time-stretching for better lip-sync (requires: pip install librosa soundfile)')
     voiceover_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Transcribe subcommand
@@ -214,6 +217,8 @@ Examples:
                                  help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
     revoice_parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto',
                                  help='Device to use for transcription/diarization (default: auto)')
+    revoice_parser.add_argument('--enable-time-stretch', action='store_true',
+                                 help='Use smart time-stretching for better lip-sync (requires: pip install librosa soundfile)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -275,6 +280,7 @@ def handle_voiceover_command(args, parser):
     volume = args.volume or config.get('volume', '+0%')
     pitch = args.pitch or config.get('pitch', '+0Hz')
     timing_tolerance_ms = args.tolerance if args.tolerance is not None else config.get('timing_tolerance_ms', 150)
+    enable_time_stretch = args.enable_time_stretch or config.get('enable_time_stretch', False)
     speaker_voices = config.get('speaker_voices', {})
     
     # Set output path
@@ -297,6 +303,7 @@ def handle_voiceover_command(args, parser):
             volume=volume,
             pitch=pitch,
             timing_tolerance_ms=timing_tolerance_ms,
+            enable_time_stretch=enable_time_stretch,
             verbose=not args.quiet,
         )
         print("[OK] Conversion complete!")
@@ -399,6 +406,7 @@ def handle_revoice_command(args):
     rate = args.rate or config.get('rate', '+0%')
     volume = args.volume or config.get('volume', '+0%')
     pitch = args.pitch or config.get('pitch', '+0Hz')
+    enable_time_stretch = args.enable_time_stretch or config.get('enable_time_stretch', False)
     speaker_voices = config.get('speaker_voices', {})
     default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
     
@@ -449,6 +457,7 @@ def handle_revoice_command(args):
             enable_speaker_detection=args.multi_speaker,
             use_pyannote=use_pyannote,
             device=device,
+            enable_time_stretch=enable_time_stretch,
         )
         
         # Clean up temp files
