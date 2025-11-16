@@ -461,6 +461,7 @@ def handle_revoice_command(args):
             use_pyannote=use_pyannote,
             device=device,
             enable_time_stretch=enable_time_stretch,
+            use_word_timing=use_word_timing,
         )
         
         # Clean up temp files
