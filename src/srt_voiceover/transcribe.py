@@ -230,7 +230,7 @@ def calculate_segment_rate(
     elastic_timing: bool = False,
     prev_segment_end_s: Optional[float] = None,
     next_segment_start_s: Optional[float] = None
-) -> Tuple[str, float, float]:
+) -> Tuple[int, float, float]:
     """
     Calculate optimal TTS rate for a segment based on original word timing.
     
@@ -244,7 +244,7 @@ def calculate_segment_rate(
         next_segment_start_s: Start time of next segment (for elastic)
         
     Returns:
-        Tuple of (rate string, adjusted_start, adjusted_end)
+        Tuple of (rate_percent as int, adjusted_start, adjusted_end)
     """
     # Find words within this segment's time range
     segment_words = [
@@ -253,14 +253,14 @@ def calculate_segment_rate(
     ]
     
     if not segment_words:
-        return "+0%", segment_start_s, segment_end_s
+        return 0, segment_start_s, segment_end_s
     
     # Calculate speaking rate (words per minute)
     word_count = len(segment_words)
     duration_s = segment_end_s - segment_start_s
     
     if duration_s <= 0:
-        return "+0%", segment_start_s, segment_end_s
+        return 0, segment_start_s, segment_end_s
     
     duration_minutes = duration_s / 60.0
     wpm = word_count / duration_minutes
@@ -314,8 +314,50 @@ def calculate_segment_rate(
     # Clamp to REASONABLE limits for natural-sounding speech
     rate_percent = max(-20, min(40, rate_percent))
     
-    rate_str = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
-    return rate_str, adjusted_start, adjusted_end
+    return rate_percent, adjusted_start, adjusted_end
+
+
+def smooth_segment_rates(
+    raw_rates: List[int],
+    max_change_per_segment: int = 15
+) -> List[int]:
+    """
+    Smooth rate changes between consecutive segments to avoid jarring transitions.
+    
+    This prevents sudden jumps like +29% -> -4% -> +40% by limiting how much
+    the rate can change from one segment to the next.
+    
+    Args:
+        raw_rates: List of raw rate percentages (e.g., [29, 12, -4, 40])
+        max_change_per_segment: Maximum rate change allowed between consecutive segments
+        
+    Returns:
+        List of smoothed rate percentages
+    """
+    if not raw_rates:
+        return []
+    
+    smoothed = [raw_rates[0]]  # First segment keeps its rate
+    
+    for i in range(1, len(raw_rates)):
+        prev_rate = smoothed[-1]
+        desired_rate = raw_rates[i]
+        
+        # Limit the change from previous segment
+        rate_change = desired_rate - prev_rate
+        
+        if abs(rate_change) > max_change_per_segment:
+            # Cap the change
+            if rate_change > 0:
+                new_rate = prev_rate + max_change_per_segment
+            else:
+                new_rate = prev_rate - max_change_per_segment
+        else:
+            new_rate = desired_rate
+        
+        smoothed.append(new_rate)
+    
+    return smoothed
 
 
 def _transcribe_via_api(
