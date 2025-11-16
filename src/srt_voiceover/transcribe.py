@@ -259,11 +259,12 @@ def calculate_segment_rate(segment_start_s: float, segment_end_s: float, segment
     baseline_wpm = 150
     rate_multiplier = wpm / baseline_wpm
     
-    # Convert to percentage (-50% to +100% for Edge TTS)
+    # Convert to percentage
     rate_percent = int((rate_multiplier - 1.0) * 100)
     
-    # Clamp to safe Edge TTS limits
-    rate_percent = max(-50, min(100, rate_percent))
+    # Clamp to REASONABLE limits for natural-sounding speech
+    # -20% to +40% prevents extreme speeds that sound rushed/robotic
+    rate_percent = max(-20, min(40, rate_percent))
     
     return f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
 
