@@ -209,8 +209,8 @@ def align_segment_duration_smart(
     target_duration_ms: int,
     tolerance_ms: int = 150,
     enable_time_stretch: bool = True,
-    max_stretch_ratio: float = 1.25,
-    min_stretch_ratio: float = 0.80,
+    max_stretch_ratio: float = 1.10,  # Reduced from 1.25 - only 10% faster
+    min_stretch_ratio: float = 0.90,  # Increased from 0.80 - only 10% slower
     verbose: bool = False
 ) -> AudioSegment:
     """
