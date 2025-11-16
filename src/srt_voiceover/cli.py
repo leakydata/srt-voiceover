@@ -221,6 +221,8 @@ Examples:
                                  help='Use smart time-stretching for better lip-sync (requires: pip install librosa soundfile)')
     revoice_parser.add_argument('--use-word-timing', action='store_true',
                                  help='Use word-level timing for dynamic rate matching (recommended for best quality)')
+    revoice_parser.add_argument('--elastic-timing', action='store_true',
+                                 help='Enable elastic timing windows - adjusts subtitle timing to reduce speed changes (requires --use-word-timing)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
@@ -410,6 +412,14 @@ def handle_revoice_command(args):
     pitch = args.pitch or config.get('pitch', '+0Hz')
     enable_time_stretch = args.enable_time_stretch or config.get('enable_time_stretch', False)
     use_word_timing = args.use_word_timing or config.get('use_word_timing', False)
+    elastic_timing = args.elastic_timing or config.get('elastic_timing', False)
+    
+    # Validate: elastic timing requires word timing
+    if elastic_timing and not use_word_timing:
+        print("Error: --elastic-timing requires --use-word-timing to be enabled")
+        print("Try: srt-voiceover revoice input.mp4 --use-word-timing --elastic-timing")
+        sys.exit(1)
+    
     speaker_voices = config.get('speaker_voices', {})
     default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
     
@@ -462,6 +472,7 @@ def handle_revoice_command(args):
             device=device,
             enable_time_stretch=enable_time_stretch,
             use_word_timing=use_word_timing,
+            elastic_timing=elastic_timing,
         )
         
         # Clean up temp files

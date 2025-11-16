@@ -15,6 +15,19 @@ pitch: "+0Hz"    # Pitch: -50Hz to +100Hz
 timing_tolerance_ms: 150
 
 # ===================================
+# Advanced Timing Options
+# ===================================
+# Enable smart time-stretching for better lip-sync (requires: pip install librosa soundfile)
+enable_time_stretch: false
+
+# Use word-level timing for dynamic rate matching (recommended for best quality)
+use_word_timing: false
+
+# Enable elastic timing windows - adjusts subtitle timing to reduce speed changes
+# NOTE: Requires use_word_timing to be enabled
+elastic_timing: false
+
+# ===================================
 # Whisper Transcription - OPTIONAL
 # ===================================
 # Uses LOCAL whisper by default (pip install openai-whisper)
