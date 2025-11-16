@@ -676,6 +676,7 @@ def audio_to_voiceover_workflow(
     device: str = "cpu",
     enable_time_stretch: bool = False,
     use_word_timing: bool = False,
+    elastic_timing: bool = False,
 ) -> Tuple[str, str]:
     """
     Complete workflow: Audio → Transcribe → Re-voice with different speakers.
@@ -759,6 +760,7 @@ def audio_to_voiceover_workflow(
         pitch=pitch,
         enable_time_stretch=enable_time_stretch,
         word_timings=word_timings,
+        elastic_timing=elastic_timing,
         verbose=verbose,
     )
     

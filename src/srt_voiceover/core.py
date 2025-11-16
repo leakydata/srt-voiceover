@@ -334,6 +334,7 @@ def build_voiceover_from_srt(
     timing_tolerance_ms: int = 150,
     enable_time_stretch: bool = False,
     word_timings: Optional[list] = None,
+    elastic_timing: bool = False,
     verbose: bool = True,
 ) -> None:
     """
@@ -350,6 +351,7 @@ def build_voiceover_from_srt(
         timing_tolerance_ms: Tolerance for timing alignment in milliseconds
         enable_time_stretch: Use smart time-stretching for better lip-sync (requires librosa)
         word_timings: Optional word-level timing data for dynamic rate matching
+        elastic_timing: Enable elastic timing windows (requires word_timings)
         verbose: Print progress information
         
     Raises:
@@ -382,22 +384,49 @@ def build_voiceover_from_srt(
         end_ms = srt_time_to_milliseconds(sub.end)
         target_duration = end_ms - start_ms
 
-        if start_ms > current_position_ms:
-            gap = start_ms - current_position_ms
-            final_audio += AudioSegment.silent(duration=gap)
-            current_position_ms = start_ms
-
         # Calculate dynamic rate if word timings are available
         segment_rate = rate  # Default to global rate
+        adjusted_start_ms = start_ms
+        adjusted_end_ms = end_ms
+        
         if word_timings:
             segment_start_s = start_ms / 1000.0
             segment_end_s = end_ms / 1000.0
-            segment_rate = calculate_segment_rate(
+            
+            # Get adjacent segment times for elastic timing
+            prev_segment_end_s = None
+            next_segment_start_s = None
+            if elastic_timing:
+                if idx > 0:
+                    prev_segment_end_s = srt_time_to_milliseconds(subs[idx-1].end) / 1000.0
+                if idx < len(subs) - 1:
+                    next_segment_start_s = srt_time_to_milliseconds(subs[idx+1].start) / 1000.0
+            
+            result = calculate_segment_rate(
                 segment_start_s,
                 segment_end_s,
                 cleaned_text,
-                word_timings
+                word_timings,
+                elastic_timing=elastic_timing,
+                prev_segment_end_s=prev_segment_end_s,
+                next_segment_start_s=next_segment_start_s
             )
+            segment_rate, adjusted_start_s, adjusted_end_s = result
+            adjusted_start_ms = int(adjusted_start_s * 1000)
+            adjusted_end_ms = int(adjusted_end_s * 1000)
+            target_duration = adjusted_end_ms - adjusted_start_ms
+        
+        # Handle gap/overlap with elastic timing adjustments
+        if adjusted_start_ms > current_position_ms:
+            gap = adjusted_start_ms - current_position_ms
+            final_audio += AudioSegment.silent(duration=gap)
+            current_position_ms = adjusted_start_ms
+        elif adjusted_start_ms < current_position_ms:
+            # Overlap - trim previous audio slightly
+            overlap = current_position_ms - adjusted_start_ms
+            if overlap > 0 and len(final_audio) >= overlap:
+                final_audio = final_audio[:-overlap]
+                current_position_ms = adjusted_start_ms
         
         if verbose:
             print(
