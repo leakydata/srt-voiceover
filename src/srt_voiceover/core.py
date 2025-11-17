@@ -410,20 +410,30 @@ def build_voiceover_from_srt(
 
     if word_timings:
         raw_rates = []
+        prev_rate = None
+
         for idx, sub in enumerate(subs):
             raw_text = sub.text.strip()
             if not raw_text:
                 continue
-            
-            speaker, cleaned_text = parse_speaker_and_text(raw_text)
+
+            # Use advanced speaker detection (handles both explicit and implicit)
+            speaker, cleaned_text = parse_speaker_and_text_advanced(
+                raw_text,
+                prev_speaker=speaker_context.get_last_speaker(),
+                use_heuristic=True
+            )
+
             if not cleaned_text:
                 continue
-            
+
+            speaker_context.add_segment(idx, speaker)
+
             start_ms = srt_time_to_milliseconds(sub.start)
             end_ms = srt_time_to_milliseconds(sub.end)
             segment_start_s = start_ms / 1000.0
             segment_end_s = end_ms / 1000.0
-            
+
             # Get adjacent segment times for elastic timing
             prev_segment_end_s = None
             next_segment_start_s = None
@@ -432,7 +442,21 @@ def build_voiceover_from_srt(
                     prev_segment_end_s = srt_time_to_milliseconds(subs[idx-1].end) / 1000.0
                 if idx < len(subs) - 1:
                     next_segment_start_s = srt_time_to_milliseconds(subs[idx+1].start) / 1000.0
-            
+
+            # Try to match words with confidence scoring
+            matched_words, confidence, unmatched = match_words_to_segment(
+                cleaned_text,
+                word_timings,
+                segment_start_s,
+                segment_end_s,
+                fuzzy_threshold=0.7,
+                verbose=False
+            )
+
+            # Determine timing strategy based on confidence
+            strategy = get_timing_strategy(confidence)
+
+            # Calculate rate using original method
             rate_percent, adjusted_start_s, adjusted_end_s = calculate_segment_rate(
                 segment_start_s,
                 segment_end_s,
@@ -442,8 +466,20 @@ def build_voiceover_from_srt(
                 prev_segment_end_s=prev_segment_end_s,
                 next_segment_start_s=next_segment_start_s
             )
-            
+
+            # Apply voice-specific profile if enabled
+            voice_for_segment = get_voice_for_speaker(speaker, speaker_voices, default_voice)
+            if enable_voice_profiles:
+                rate_percent = calculate_segment_rate_with_voice_profile(
+                    voice_for_segment,
+                    wpm=150,  # Placeholder - would need to extract actual WPM
+                    prev_rate=prev_rate,
+                    max_change_per_segment=15
+                )
+
             raw_rates.append(rate_percent)
+            prev_rate = rate_percent
+
             segment_data.append({
                 'idx': idx,
                 'sub': sub,
@@ -453,7 +489,11 @@ def build_voiceover_from_srt(
                 'end_ms': end_ms,
                 'adjusted_start_s': adjusted_start_s,
                 'adjusted_end_s': adjusted_end_s,
-                'raw_rate': rate_percent
+                'raw_rate': rate_percent,
+                'confidence': confidence,
+                'matched_words': len(matched_words),
+                'total_words': len(matched_words) + len(unmatched),
+                'timing_strategy': strategy['level']
             })
         
         # Apply smoothing to prevent jarring rate changes
