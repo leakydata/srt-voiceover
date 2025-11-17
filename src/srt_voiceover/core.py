@@ -593,16 +593,40 @@ def build_voiceover_from_srt(
             segment_num = segment_data.index(seg_data) + 1
             print(
                 f"Processing subtitle {segment_num}/{total_segments} - "
-                f"Speaker: {speaker} Voice: {voice_for_segment}"
+                f"Speaker: {speaker or '(default)'} Voice: {voice_for_segment}"
             )
-            print(f"   Text: {repr(cleaned_text)}")
-            if word_timings:
+            print(f"   Text: {repr(cleaned_text[:60])}")
+
+            if word_timings and seg_data.get('confidence', 0) > 0:
+                # Show word matching confidence
+                confidence = seg_data.get('confidence', 0)
+                matched = seg_data.get('matched_words', 0)
+                total = seg_data.get('total_words', 1)
+                strategy = seg_data.get('timing_strategy', 'NONE')
+                print(f"   Word match: {matched}/{total} ({confidence:.0%} confidence) [{strategy}]")
+
                 # Show smoothed rate (and raw if different)
                 if 'raw_rate' in seg_data and seg_data['raw_rate'] != seg_data['rate_percent']:
                     raw_rate_str = f"+{seg_data['raw_rate']}%" if seg_data['raw_rate'] >= 0 else f"{seg_data['raw_rate']}%"
                     print(f"   Dynamic rate: {segment_rate} (smoothed from {raw_rate_str})")
                 else:
                     print(f"   Dynamic rate: {segment_rate}")
+            elif word_timings:
+                print(f"   Dynamic rate: {segment_rate}")
+
+        # Add quality metric
+        quality_report.add_segment(
+            segment_idx=idx,
+            speaker=speaker,
+            text=cleaned_text,
+            confidence=seg_data.get('confidence', 0.0),
+            rate=rate_percent if word_timings else int(rate.rstrip('%').lstrip('+')),
+            prev_rate=prev_rate if word_timings and idx > 0 else None,
+            timing_strategy=seg_data.get('timing_strategy', 'NONE'),
+            word_match_count=seg_data.get('matched_words', 0),
+            total_words=seg_data.get('total_words', 0)
+        )
+        prev_rate = rate_percent if word_timings else None
 
         segment = synthesize_speech_segment(
             text=cleaned_text,
@@ -631,8 +655,14 @@ def build_voiceover_from_srt(
     output_format = "mp3"  # default
     if output_audio_path.lower().endswith('.wav'):
         output_format = "wav"
-    
+
     final_audio.export(output_audio_path, format=output_format)
     if verbose:
         print(f"[OK] Saved final voiceover to: {output_audio_path}")
+
+    # Print quality report
+    if verbose and quality_report.segments:
+        quality_report.print_report(max_issues_shown=5, show_all_segments=False)
+
+    return quality_report
 
