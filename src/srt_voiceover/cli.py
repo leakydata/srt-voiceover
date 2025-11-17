@@ -713,12 +713,15 @@ def handle_revoice_command(args):
                 pass
 
         print(f"\n[OK] Re-voicing complete: {audio_path}")
-        
+
         # If input was video, offer to merge back
         if input_file.suffix.lower() in video_extensions and not args.quiet:
-            output_video = output_path.replace('.mp3', '_dubbed.mp4').replace('.wav', '_dubbed.mp4')
+            input_video = args.input
+            # Create output video filename based on output audio filename
+            base_name = Path(output_path).stem
+            output_video = Path(output_path).parent / f"{base_name}_dubbed.mp4"
             print(f"\nTo merge with original video, run:")
-            print(f'  ffmpeg -i "{args.input}" -i "{audio_path}" -c:v copy -map 0:v:0 -map 1:a:0 "{output_video}"')
+            print(f'ffmpeg -i "{input_video}" -i "{audio_path}" -c:v copy -map 0:v:0 -map 1:a:0 "{output_video}"')
     except ImportError as e:
         print(f"\n[ERROR] {e}")
         print("\nTo use re-voicing features, install:")
