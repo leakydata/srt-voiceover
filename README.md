@@ -10,11 +10,14 @@ Perfect free alternative to SpeechGen, Murf.ai, and other paid dubbing services!
 ## ✨ Features
 
 - 🎤 **Audio Transcription** - Convert audio/video to SRT with Whisper
-- 🎭 **Multi-Speaker Support** - Automatic speaker detection and voice assignment
-- ⏱️ **Perfect Timing** - Word-level timing with elastic rate smoothing
+- 🎭 **Advanced Speaker Detection** - Works with pre-labeled & auto-detected speakers
+- ⏱️ **Word-Level Timing** - Fuzzy word matching with confidence scoring
+- 🎯 **Per-Voice Optimization** - 30+ voice profiles for natural sound
+- 📊 **Quality Metrics** - Automatic sync quality reporting with issue detection
 - 🌍 **400+ Voices** - Microsoft Edge TTS in 80+ languages
 - 🎬 **Video Dubbing** - Complete pipeline for video re-voicing
 - ✏️ **Edit Workflow** - Fix transcription errors before voiceover generation
+- 📤 **Multi-Format Export** - WebVTT, SRT, JSON, CSV, FCPXML
 - 🚀 **GPU Acceleration** - 5-10x faster with CUDA
 - 💰 **Free & Open Source** - No subscriptions or API costs
 
@@ -59,8 +62,11 @@ srt-voiceover voiceover transcript.srt -o output.mp3 \
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[Quick Start Guide](QUICKSTART.md)** - 30-second to 5-minute tutorials
+- **[Advanced Features Guide](ADVANCED_FEATURES.md)** - Fuzzy matching, voice profiles, quality metrics
+- **[Quick Start Enhancements](QUICK_START_ENHANCEMENTS.md)** - New features overview
 - **[Full Documentation](DOCUMENTATION.md)** - Complete guide with examples
+- **[Implementation Details](IMPLEMENTATION_SUMMARY.md)** - Technical architecture
 - **[Contributing Guide](CONTRIBUTING.md)** - Development setup
 
 ## 🎯 Use Cases
@@ -93,6 +99,80 @@ srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing --elastic-timing
 Perfect timing + smooth, natural transitions. Best for video dubbing with visible speakers.
 
 **How it works:** Expands timing windows by borrowing from gaps, then smooths rate changes (max 15% per segment) to prevent jarring speed jumps.
+
+## ✨ Advanced Features (NEW!)
+
+### Smart Speaker Detection
+Works seamlessly with both labeled and unlabeled subtitles:
+
+```bash
+# Pre-labeled: "Nathan: Hello world"
+# Auto-detected: Uses context and previous speaker
+
+srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing
+```
+
+See [Advanced Features Guide](ADVANCED_FEATURES.md) for details on:
+- Explicit label detection
+- Context-based speaker inference
+- Multi-speaker analysis
+
+### Fuzzy Word Matching
+Handles transcription variations automatically:
+- Typos and spelling variations (70% similarity threshold)
+- Contractions: "don't" ↔ "dont"
+- Punctuation handling
+- **Confidence scoring** (0-100%) for sync quality
+
+### Per-Voice Optimization
+30+ voice profiles with:
+- Baseline speaking rates per voice
+- Natural rate adjustment ranges
+- Voice-specific characteristics
+
+```bash
+# List available voices with profiles
+python -c "from srt_voiceover import list_available_voices; [print(v) for v in list_available_voices()]"
+```
+
+### Quality Metrics & Reporting
+Automatic analysis of synchronization:
+- Segment-level confidence scores
+- Issue detection (10+ issue types)
+- Quality level classification (EXCELLENT/GOOD/FAIR/POOR)
+- JSON export for analysis
+
+```python
+import srt_voiceover as svo
+
+quality_report = svo.build_voiceover_from_srt(
+    "subtitles.srt", "output.mp3",
+    word_timings=timings,
+    verbose=True  # Shows quality report
+)
+
+# Access metrics
+print(quality_report.get_summary())
+quality_report.export_json("report.json")
+```
+
+### Multi-Format Export
+Export word timings for video editor integration:
+
+```bash
+srt-voiceover transcribe video.mp4 -o subs.srt --save-word-timings
+
+# Then export to multiple formats:
+python -c "from srt_voiceover import export_word_timings_multi; \
+  export_word_timings_multi(timings, 'output', formats=['vtt', 'json', 'csv'])"
+```
+
+Supported formats:
+- **JSON** - Machine-readable data
+- **WebVTT** - Web video players
+- **SubRip (SRT)** - Subtitle editors
+- **CSV** - Spreadsheets
+- **FCPXML** - Final Cut Pro
 
 ## 🌍 Multi-Language Support
 
