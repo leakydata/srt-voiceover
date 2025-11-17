@@ -154,12 +154,13 @@ def translate_text(
     language_name = LANGUAGE_NAMES.get(target_language, target_language)
 
     # Create translation prompt
-    prompt = f"""Translate the following text to {language_name}.
-Provide ONLY the translation, nothing else. No explanations.
+    prompt = f"""You are a professional translator. Translate this text to {language_name}.
+Return ONLY the translated text. Do not add any explanations, notes, or commentary.
+Do not translate technical terms like proper nouns.
 
-Text: {text}
+Text to translate: {text}
 
-Translation:"""
+Translated text:"""
 
     try:
         if verbose:
