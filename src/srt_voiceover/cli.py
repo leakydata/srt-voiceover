@@ -210,6 +210,7 @@ Examples:
     revoice_parser.add_argument('input', help='Input audio file')
     revoice_parser.add_argument('-o', '--output', help='Output audio file (default: revoiced.mp3)')
     revoice_parser.add_argument('-c', '--config', help='Configuration file (YAML or JSON)')
+    revoice_parser.add_argument('--default-voice', help='Default voice for unlabeled speakers')
     revoice_parser.add_argument('--whisper-url', help='Whisper API URL (for API mode)')
     revoice_parser.add_argument('--api-key', help='API key for Whisper API (if using API mode)')
     revoice_parser.add_argument('--language', help='Language code for transcription')
@@ -471,7 +472,7 @@ def handle_revoice_command(args):
         sys.exit(1)
     
     speaker_voices = config.get('speaker_voices', {})
-    default_voice = config.get('default_voice', 'en-US-AndrewMultilingualNeural')
+    default_voice = args.default_voice or config.get('default_voice', 'en-US-AndrewMultilingualNeural')
     
     output_path = args.output or "revoiced.mp3"
     temp_srt = "temp_transcription.srt" if not args.keep_srt else output_path.replace('.mp3', '.srt').replace('.wav', '.srt')
