@@ -522,14 +522,21 @@ def build_voiceover_from_srt(
             raw_text = sub.text.strip()
             if not raw_text:
                 continue
-            
-            speaker, cleaned_text = parse_speaker_and_text(raw_text)
+
+            # Use advanced speaker detection
+            speaker, cleaned_text = parse_speaker_and_text_advanced(
+                raw_text,
+                prev_speaker=speaker_context.get_last_speaker(),
+                use_heuristic=True
+            )
             if not cleaned_text:
                 continue
-            
+
+            speaker_context.add_segment(idx, speaker)
+
             start_ms = srt_time_to_milliseconds(sub.start)
             end_ms = srt_time_to_milliseconds(sub.end)
-            
+
             segment_data.append({
                 'idx': idx,
                 'sub': sub,
@@ -539,7 +546,11 @@ def build_voiceover_from_srt(
                 'end_ms': end_ms,
                 'adjusted_start_s': start_ms / 1000.0,
                 'adjusted_end_s': end_ms / 1000.0,
-                'rate_percent': None  # Use global rate
+                'rate_percent': None,  # Use global rate
+                'confidence': 0.0,  # No word timing available
+                'matched_words': 0,
+                'total_words': 0,
+                'timing_strategy': 'NONE'
             })
     
     # Now process all segments
