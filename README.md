@@ -272,10 +272,14 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
+### Technologies
 - **[OpenAI Whisper](https://github.com/openai/whisper)** - Speech recognition
 - **[Microsoft Edge TTS](https://github.com/rany2/edge-tts)** - Text-to-speech
 - **[Pyannote.audio](https://github.com/pyannote/pyannote-audio)** - Speaker diarization
 - **[FFmpeg](https://ffmpeg.org/)** - Audio/video processing
+
+### Development
+This project was created by **Nathan Jones** through an iterative collaborative process with **Claude AI (Anthropic)** via **[Cursor IDE](https://cursor.sh/)**. The architecture, feature decisions, and testing were driven by Nathan, with AI assistance in implementation, optimization, and documentation. This represents a modern approach to open-source development where human creativity and AI capabilities work together.
 
 ## 📞 Support
 
