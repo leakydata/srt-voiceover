@@ -219,7 +219,7 @@ class SyncQualityReport:
 
         # Show problematic segments
         if self.segments:
-            print(f"\n{'─' * 80}")
+            print(f"\n{'-' * 80}")
 
             if show_all_segments:
                 segments_to_show = self.segments

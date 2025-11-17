@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(srt-voiceover:*)"
+      "Bash(srt-voiceover:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
