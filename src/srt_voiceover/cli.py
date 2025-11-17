@@ -426,6 +426,50 @@ def handle_transcribe_command(args):
             save_word_timings_path=save_word_timings_path,
         )
         print(f"[OK] Transcription complete: {output_path}")
+
+        # Handle translation if requested
+        if args.translate_to:
+            try:
+                from .translation import OllamaConfig, translate_srt, OllamaConnectionError
+
+                # Create Ollama config with CLI or config file settings
+                ollama_base_url = args.ollama_base_url or config.get('ollama_base_url', 'http://localhost:11434')
+                translation_model = args.translation_model or config.get('translation_model', 'mistral')
+
+                ollama_config = OllamaConfig(
+                    base_url=ollama_base_url,
+                    model=translation_model,
+                )
+
+                # Validate Ollama connection
+                if not args.quiet:
+                    print(f"\nValidating Ollama connection...")
+                if not ollama_config.validate(verbose=not args.quiet):
+                    print("[ERROR] Ollama validation failed. Translation skipped.")
+                    if not args.quiet:
+                        print(f"Tip: Make sure Ollama is running at {ollama_base_url}")
+                else:
+                    # Translate the SRT
+                    translated_path = translate_srt(
+                        srt_path=output_path,
+                        target_language=args.translate_to,
+                        config=ollama_config,
+                        verbose=not args.quiet,
+                    )
+                    print(f"[OK] Translation complete: {translated_path}")
+                    # Update output_path to point to translated file for workflow tip
+                    output_path = translated_path
+
+            except ImportError:
+                print("[ERROR] Translation requires: pip install requests")
+                sys.exit(1)
+            except OllamaConnectionError as e:
+                print(f"[ERROR] {e}")
+                sys.exit(1)
+            except Exception as e:
+                print(f"[ERROR] Translation failed: {e}")
+                sys.exit(1)
+
         if save_word_timings_path:
             print(f"\n[WORKFLOW TIP] You can now:")
             print(f"  1. Edit '{output_path}' to fix any transcription errors")
