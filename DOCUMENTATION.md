@@ -519,17 +519,37 @@ export HF_TOKEN=hf_your_token_here
 # 1. Transcribe original
 srt-voiceover transcribe english_video.mp4 -o english.srt --save-word-timings
 
-# 2. Translate SRT to Spanish (use any translation service)
-# Keep timing, translate text → spanish.srt
+# 2. Translate SRT to other languages (use Google Translate, DeepL, etc.)
+# Keep timing, translate text → spanish.srt, french.srt, etc.
 
-# 3. Generate Spanish voiceover
+# 3. Generate voiceovers for each language
 srt-voiceover voiceover spanish.srt -o spanish_audio.mp3 \
   --word-timings english_word_timings.json \
-  --default-voice "es-ES-ElviraNeural"
+  --default-voice "es-ES-ElviraNeural" \
+  --elastic-timing
 
-# 4. Create Spanish version
-ffmpeg -i english_video.mp4 -i spanish_audio.mp3 \
-  -c:v copy -map 0:v:0 -map 1:a:0 spanish_video.mp4
+srt-voiceover voiceover french.srt -o french_audio.mp3 \
+  --word-timings english_word_timings.json \
+  --default-voice "fr-FR-DeniseNeural" \
+  --elastic-timing
+
+# 4. Create multi-language video (one file with language selection)
+ffmpeg -i english_video.mp4 \
+  -i english.srt -i spanish.srt -i french.srt \
+  -i spanish_audio.mp3 -i french_audio.mp3 \
+  -map 0:v:0 -map 0:a:0 -map 4:a:0 -map 5:a:0 \
+  -map 1:s:0 -map 2:s:0 -map 3:s:0 \
+  -c:v copy -c:a aac -c:s srt \
+  -metadata:s:a:0 language=eng -metadata:s:a:0 title="English" \
+  -metadata:s:a:1 language=spa -metadata:s:a:1 title="Spanish" \
+  -metadata:s:a:2 language=fra -metadata:s:a:2 title="French" \
+  -metadata:s:s:0 language=eng -metadata:s:s:0 title="English" \
+  -metadata:s:s:1 language=spa -metadata:s:s:1 title="Spanish" \
+  -metadata:s:s:2 language=fra -metadata:s:s:2 title="French" \
+  multilingual.mkv
+
+# Now viewers can select audio track AND subtitle track in their player!
+# Perfect for accessibility and language learning
 ```
 
 ### Podcast Cleanup

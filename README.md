@@ -290,6 +290,8 @@ Future features and improvements we're planning:
 - **YouTube accessibility** - Make content accessible across language barriers
 - **Movie localization** - Professional-quality dubbing for films
 - **Subtitle translation pipeline** - Integrate with translation APIs (Google Translate, DeepL)
+- **Multi-track video creation** - One-command generation of videos with multiple audio/subtitle tracks
+- **Subtitle embedding** - Automatically embed soft subtitles (toggle-able, not burned-in)
 
 ### Quality Improvements
 - **Voice cloning support** - Preserve original speaker's voice characteristics
