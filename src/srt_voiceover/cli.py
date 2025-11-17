@@ -235,6 +235,12 @@ Examples:
                                  help='Use word-level timing for dynamic rate matching (recommended for best quality)')
     revoice_parser.add_argument('--elastic-timing', action='store_true',
                                  help='Enable elastic timing windows - adjusts subtitle timing to reduce speed changes (requires --use-word-timing)')
+    revoice_parser.add_argument('--translate-to', metavar='LANG',
+                                 help='Translate transcribed SRT to target language (e.g., es, fr, de) using Ollama')
+    revoice_parser.add_argument('--ollama-base-url',
+                                 help='Ollama API base URL (default: http://localhost:11434)')
+    revoice_parser.add_argument('--translation-model', default='mistral',
+                                 help='Ollama model for translation (default: mistral)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
