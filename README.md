@@ -218,7 +218,7 @@ srt-voiceover revoice video.mp4 -o output.mp3 \
 
 **Requirements:**
 - [Ollama](https://ollama.ai) - Download and run locally or access remotely
-- Model: `ollama pull mistral` (or any available model)
+- Model: `ollama pull gpt-oss:20b` (default) or any available model (mistral, neural-chat, etc.)
 
 **Supported languages:** Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, Arabic, Hindi, Dutch, Polish, Turkish, Thai, Vietnamese
 

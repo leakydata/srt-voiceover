@@ -21,8 +21,8 @@ You need Ollama running on your machine or accessible via network (like ngrok):
 **Local installation:**
 ```bash
 # Download from https://ollama.ai
-# Then run Ollama and pull a model:
-ollama pull mistral
+# Then run Ollama and pull the default model:
+ollama pull gpt-oss:20b
 
 # Ollama will start on http://localhost:11434
 ```
@@ -96,7 +96,7 @@ Create `config.yaml`:
 ```yaml
 # Ollama configuration
 ollama_base_url: "https://vast-golden-wasp.ngrok-free.app"
-translation_model: "mistral"
+translation_model: "gpt-oss:20b"
 
 # Default voice for translated voiceover
 default_voice: "es-ES-ElviraNeural"  # Spanish
@@ -252,7 +252,7 @@ srt-voiceover transcribe video.mp4 \
 srt-voiceover transcribe video.mp4 \
   -o output.srt \
   --translate-to es \
-  --translation-model mistral  # Default
+  --translation-model gpt-oss:20b  # Default
 ```
 
 ### High Quality
