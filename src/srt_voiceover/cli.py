@@ -571,31 +571,33 @@ def handle_revoice_command(args):
         audio_input = args.input
     
     try:
-        srt_path, audio_path = audio_to_voiceover_workflow(
-            input_audio=audio_input,
-            output_audio=output_path,
-            speaker_voices=speaker_voices,
-            default_voice=default_voice,
-            temp_srt=temp_srt,
+        # First transcribe the audio to get the original SRT
+        from .transcribe import transcribe_audio_to_srt
+
+        transcribe_result = transcribe_audio_to_srt(
+            audio_path=audio_input,
+            output_srt_path=temp_srt,
+            model=whisper_model,
             language=language,
-            rate=rate,
-            volume=volume,
-            pitch=pitch,
-            whisper_model=whisper_model,
-            verbose=not args.quiet,
-            use_whisper_api=use_whisper_api or (whisper_api_url is not None),
-            whisper_api_url=whisper_api_url,
-            whisper_api_key=whisper_api_key,
             enable_speaker_detection=args.multi_speaker,
+            verbose=not args.quiet,
+            use_api=use_whisper_api or (whisper_api_url is not None),
+            api_url=whisper_api_url,
+            api_key=whisper_api_key,
             use_pyannote=use_pyannote,
             device=device,
-            enable_time_stretch=enable_time_stretch,
             use_word_timing=use_word_timing,
-            elastic_timing=elastic_timing,
         )
 
-        # Handle translation if requested (BEFORE voiceover generation)
-        translated_srt_path = srt_path  # Default to original SRT
+        # Handle return value (string or tuple)
+        if use_word_timing:
+            srt_path, word_timings = transcribe_result
+        else:
+            srt_path = transcribe_result
+            word_timings = None
+
+        # Handle translation if requested
+        srt_for_voiceover = srt_path
 
         if args.translate_to:
             try:
@@ -612,39 +614,44 @@ def handle_revoice_command(args):
 
                 # Validate Ollama connection
                 if not args.quiet:
-                    print(f"\nValidating Ollama connection...")
+                    print()
+                    print("[Validating] Connecting to Ollama at " + ollama_base_url + "...")
                 if not ollama_config.validate(verbose=not args.quiet):
                     print("[ERROR] Ollama validation failed. Translation skipped.")
                     if not args.quiet:
-                        print(f"Tip: Make sure Ollama is running at {ollama_base_url}")
+                        print("Tip: Make sure Ollama is running at " + ollama_base_url)
                 else:
                     # Translate the SRT
-                    translated_srt_path = translate_srt(
+                    print()
+                    srt_for_voiceover = translate_srt(
                         srt_path=srt_path,
                         target_language=args.translate_to,
                         config=ollama_config,
                         verbose=not args.quiet,
                     )
-                    print(f"[OK] Translation complete: {translated_srt_path}")
+                    print("[OK] Translation complete: " + srt_for_voiceover)
 
             except ImportError:
                 print("[ERROR] Translation requires: pip install requests")
                 sys.exit(1)
             except OllamaConnectionError as e:
-                print(f"[ERROR] {e}")
+                print("[ERROR] " + str(e))
                 sys.exit(1)
             except Exception as e:
-                print(f"[ERROR] Translation failed: {e}")
+                print("[ERROR] Translation failed: " + str(e))
                 sys.exit(1)
 
         # Now generate voiceover from the appropriate SRT (translated or original)
         if not args.quiet:
-            print(f"\nGenerating voiceover from: {translated_srt_path}")
+            print()
+            print("Step 2/2: Generating new voiceover...")
+            if use_word_timing:
+                print("Using word-level timing for dynamic rate matching...")
 
         # Build voiceover from the SRT (translated or original)
         quality_report = build_voiceover_from_srt(
-            srt_path=translated_srt_path,
-            output_audio_path=audio_path,
+            srt_path=srt_for_voiceover,
+            output_audio_path=output_path,
             default_voice=default_voice,
             speaker_voices=speaker_voices,
             rate=rate,
@@ -655,6 +662,8 @@ def handle_revoice_command(args):
             elastic_timing=elastic_timing,
             verbose=not args.quiet,
         )
+
+        audio_path = output_path
 
         # Clean up temp files
         if not args.keep_srt and srt_path == "temp_transcription.srt":
