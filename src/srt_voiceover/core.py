@@ -8,7 +8,7 @@ import asyncio
 import tempfile
 import pysrt
 from pydub import AudioSegment
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 try:
     import edge_tts
@@ -22,6 +22,12 @@ try:
     LIBROSA_AVAILABLE = True
 except ImportError:
     LIBROSA_AVAILABLE = False
+
+# Import new modules
+from .speaker_detection import parse_speaker_and_text_advanced, SpeakerContext, get_speaker_statistics
+from .word_alignment import match_words_to_segment, get_timing_strategy
+from .voice_profiles import get_voice_profile, calculate_segment_rate_with_voice_profile
+from .quality import SyncQualityReport, SegmentQualityMetrics
 
 
 def srt_time_to_milliseconds(t) -> int:
