@@ -181,6 +181,9 @@ Examples:
     voiceover_parser.add_argument('--tolerance', type=int, help='Timing tolerance in milliseconds (default: 150)')
     voiceover_parser.add_argument('--enable-time-stretch', action='store_true',
                                     help='Use smart time-stretching for better lip-sync (requires: pip install librosa soundfile)')
+    voiceover_parser.add_argument('--word-timings', help='Path to word timings JSON file (from transcribe --save-word-timings)')
+    voiceover_parser.add_argument('--elastic-timing', action='store_true',
+                                    help='Enable elastic timing with rate smoothing (requires --word-timings)')
     voiceover_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Transcribe subcommand
@@ -198,6 +201,8 @@ Examples:
                                     help='Use pyannote.audio for professional speaker diarization (requires HF_TOKEN env var)')
     transcribe_parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto',
                                     help='Device to use for transcription/diarization (default: auto)')
+    transcribe_parser.add_argument('--save-word-timings', action='store_true',
+                                    help='Save word-level timings to JSON file for later use (enables two-step workflow)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
@@ -285,7 +290,32 @@ def handle_voiceover_command(args, parser):
     pitch = args.pitch or config.get('pitch', '+0Hz')
     timing_tolerance_ms = args.tolerance if args.tolerance is not None else config.get('timing_tolerance_ms', 150)
     enable_time_stretch = args.enable_time_stretch or config.get('enable_time_stretch', False)
+    elastic_timing = args.elastic_timing or config.get('elastic_timing', False)
     speaker_voices = config.get('speaker_voices', {})
+    
+    # Load word timings from JSON if provided
+    word_timings = None
+    if args.word_timings:
+        word_timings_path = args.word_timings
+        if not Path(word_timings_path).exists():
+            print(f"Error: Word timings file not found: {word_timings_path}")
+            sys.exit(1)
+        
+        try:
+            with open(word_timings_path, 'r', encoding='utf-8') as f:
+                word_timings = json.load(f)
+            if not args.quiet:
+                print(f"Loaded word timings from: {word_timings_path}")
+                print(f"  Total words: {len(word_timings)}")
+        except Exception as e:
+            print(f"Error loading word timings: {e}")
+            sys.exit(1)
+    
+    # Validate: elastic timing requires word timings
+    if elastic_timing and not word_timings:
+        print("Error: --elastic-timing requires --word-timings to be provided")
+        print("Tip: Use 'srt-voiceover transcribe --save-word-timings' to generate word timings")
+        sys.exit(1)
     
     # Set output path
     output_path = args.output or "output.mp3"
@@ -298,6 +328,11 @@ def handle_voiceover_command(args, parser):
     # Run the conversion
     try:
         print(f"Converting {args.input} to {output_path}...")
+        if word_timings:
+            print(f"Using word-level timing with {len(word_timings)} word timestamps")
+        if elastic_timing:
+            print(f"Elastic timing with rate smoothing enabled")
+        
         build_voiceover_from_srt(
             srt_path=args.input,
             output_audio_path=output_path,
@@ -308,6 +343,8 @@ def handle_voiceover_command(args, parser):
             pitch=pitch,
             timing_tolerance_ms=timing_tolerance_ms,
             enable_time_stretch=enable_time_stretch,
+            word_timings=word_timings,
+            elastic_timing=elastic_timing,
             verbose=not args.quiet,
         )
         print("[OK] Conversion complete!")
@@ -348,6 +385,13 @@ def handle_transcribe_command(args):
     
     output_path = args.output or "output.srt"
     
+    # Generate word timings path if requested
+    save_word_timings_path = None
+    if args.save_word_timings:
+        # Create path like: output.srt -> output_word_timings.json
+        base_name = output_path.replace('.srt', '')
+        save_word_timings_path = f"{base_name}_word_timings.json"
+    
     if not Path(args.input).exists():
         print(f"Error: Input file not found: {args.input}")
         sys.exit(1)
@@ -365,8 +409,14 @@ def handle_transcribe_command(args):
             api_key=api_key,
             use_pyannote=args.use_pyannote,
             device=device,
+            use_word_timing=args.save_word_timings,  # Enable word timing if saving
+            save_word_timings_path=save_word_timings_path,
         )
         print(f"[OK] Transcription complete: {output_path}")
+        if save_word_timings_path:
+            print(f"\n[WORKFLOW TIP] You can now:")
+            print(f"  1. Edit '{output_path}' to fix any transcription errors")
+            print(f"  2. Generate voiceover: srt-voiceover voiceover {output_path} -o output.mp3 --word-timings {save_word_timings_path}")
     except ImportError as e:
         print(f"\n[ERROR] {e}")
         print("\nTo use transcription features, install:")
