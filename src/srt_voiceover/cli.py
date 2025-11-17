@@ -582,13 +582,55 @@ def handle_revoice_command(args):
             elastic_timing=elastic_timing,
         )
         
+        # Handle translation if requested
+        translated_srt_path = srt_path  # Keep track of SRT path for translation
+        if args.translate_to:
+            try:
+                from .translation import OllamaConfig, translate_srt, OllamaConnectionError
+
+                # Create Ollama config with CLI or config file settings
+                ollama_base_url = args.ollama_base_url or config.get('ollama_base_url', 'http://localhost:11434')
+                translation_model = args.translation_model or config.get('translation_model', 'mistral')
+
+                ollama_config = OllamaConfig(
+                    base_url=ollama_base_url,
+                    model=translation_model,
+                )
+
+                # Validate Ollama connection
+                if not args.quiet:
+                    print(f"\nValidating Ollama connection...")
+                if not ollama_config.validate(verbose=not args.quiet):
+                    print("[ERROR] Ollama validation failed. Translation skipped.")
+                    if not args.quiet:
+                        print(f"Tip: Make sure Ollama is running at {ollama_base_url}")
+                else:
+                    # Translate the SRT
+                    translated_srt_path = translate_srt(
+                        srt_path=srt_path,
+                        target_language=args.translate_to,
+                        config=ollama_config,
+                        verbose=not args.quiet,
+                    )
+                    print(f"[OK] Translation complete: {translated_srt_path}")
+
+            except ImportError:
+                print("[ERROR] Translation requires: pip install requests")
+                sys.exit(1)
+            except OllamaConnectionError as e:
+                print(f"[ERROR] {e}")
+                sys.exit(1)
+            except Exception as e:
+                print(f"[ERROR] Translation failed: {e}")
+                sys.exit(1)
+
         # Clean up temp files
         if not args.keep_srt and srt_path == "temp_transcription.srt":
             try:
                 Path(srt_path).unlink()
             except:
                 pass
-        
+
         # Clean up temp extracted audio if we extracted it
         if input_file.suffix.lower() in video_extensions:
             try:
@@ -597,7 +639,7 @@ def handle_revoice_command(args):
                     print(f"Cleaned up temporary audio file")
             except:
                 pass
-        
+
         print(f"\n[OK] Re-voicing complete: {audio_path}")
         
         # If input was video, offer to merge back

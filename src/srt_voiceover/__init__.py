@@ -55,6 +55,15 @@ from .export import (
     export_word_timings_multi,
 )
 
+from .translation import (
+    OllamaConfig,
+    OllamaConnectionError,
+    translate_text,
+    translate_srt_segment,
+    translate_srt,
+    get_available_ollama_models,
+)
+
 __all__ = [
     # Core voiceover functions
     "build_voiceover_from_srt",
@@ -89,5 +98,12 @@ __all__ = [
     "export_word_timings_json",
     "export_word_timings_csv",
     "export_word_timings_multi",
+    # Translation functions
+    "OllamaConfig",
+    "OllamaConnectionError",
+    "translate_text",
+    "translate_srt_segment",
+    "translate_srt",
+    "get_available_ollama_models",
 ]
 
