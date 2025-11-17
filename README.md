@@ -281,6 +281,30 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### Development
 This project was created by **Nathan Jones** through an iterative collaborative process with **Claude AI (Anthropic)** via **[Cursor IDE](https://cursor.sh/)**. The architecture, feature decisions, and testing were driven by Nathan, with AI assistance in implementation, optimization, and documentation. This represents a modern approach to open-source development where human creativity and AI capabilities work together.
 
+## 🗺️ Roadmap
+
+Future features and improvements we're planning:
+
+### Translation & Localization
+- **Multi-language video translation** - Automatically translate and dub videos into other languages
+- **YouTube accessibility** - Make content accessible across language barriers
+- **Movie localization** - Professional-quality dubbing for films
+- **Subtitle translation pipeline** - Integrate with translation APIs (Google Translate, DeepL)
+
+### Quality Improvements
+- **Voice cloning support** - Preserve original speaker's voice characteristics
+- **Emotion preservation** - Match emotional tone from original audio
+- **Lip-sync optimization** - Even better timing for close-up face shots
+- **Background audio mixing** - Preserve music/sfx while replacing dialogue
+
+### Performance & UX
+- **Batch processing UI** - Process multiple files efficiently
+- **Web interface** - Browser-based tool for non-technical users
+- **Real-time preview** - Hear voices before generating full audio
+- **Cloud deployment** - Optional hosted service
+
+**Want to help?** Check out [open issues](https://github.com/leakydata/srt-voiceover/issues) or suggest features in [discussions](https://github.com/leakydata/srt-voiceover/discussions)!
+
 ## 📞 Support
 
 - **Issues**: https://github.com/leakydata/srt-voiceover/issues
