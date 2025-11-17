@@ -378,18 +378,36 @@ def build_voiceover_from_srt(
     """
     if speaker_voices is None:
         speaker_voices = {}
-    
+
+    # Create quality report if not provided
+    if quality_report is None:
+        quality_report = SyncQualityReport(verbose=verbose)
+
     # Import word timing functions if needed
     if word_timings:
         from .transcribe import calculate_segment_rate, smooth_segment_rates
-    
+
     subs = pysrt.open(srt_path, encoding="utf-8")
-    
+
+    # Analyze subtitle structure for speaker information
+    if verbose:
+        print("\n[INFO] Analyzing subtitle structure...")
+    speaker_stats = get_speaker_statistics(
+        [{'speaker': parse_speaker_and_text(sub.text)[0]} for sub in subs]
+    )
+    if speaker_stats['unique_speakers']:
+        print(f"[INFO] Found speakers: {', '.join(speaker_stats['unique_speakers'])}")
+    elif speaker_stats['segments_with_speakers'] > 0:
+        print(f"[INFO] Some segments have speaker labels")
+    else:
+        print(f"[INFO] No explicit speaker labels found - using default voice")
+
     # ==============================================================
     # PHASE 1: Calculate raw rates for all segments (if using word timing)
     # ==============================================================
     segment_data = []  # Store all segment info for two-pass processing
-    
+    speaker_context = SpeakerContext()
+
     if word_timings:
         raw_rates = []
         for idx, sub in enumerate(subs):
