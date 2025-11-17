@@ -593,16 +593,17 @@ def handle_revoice_command(args):
             use_word_timing=use_word_timing,
             elastic_timing=elastic_timing,
         )
-        
-        # Handle translation if requested
-        translated_srt_path = srt_path  # Keep track of SRT path for translation
+
+        # Handle translation if requested (BEFORE voiceover generation)
+        translated_srt_path = srt_path  # Default to original SRT
+
         if args.translate_to:
             try:
                 from .translation import OllamaConfig, translate_srt, OllamaConnectionError
 
                 # Create Ollama config with CLI or config file settings
                 ollama_base_url = args.ollama_base_url or config.get('ollama_base_url', 'http://localhost:11434')
-                translation_model = args.translation_model or config.get('translation_model', 'mistral')
+                translation_model = args.translation_model or config.get('translation_model', 'gpt-oss:20b')
 
                 ollama_config = OllamaConfig(
                     base_url=ollama_base_url,
@@ -636,10 +637,36 @@ def handle_revoice_command(args):
                 print(f"[ERROR] Translation failed: {e}")
                 sys.exit(1)
 
+        # Now generate voiceover from the appropriate SRT (translated or original)
+        if not args.quiet:
+            print(f"\nGenerating voiceover from: {translated_srt_path}")
+
+        # Build voiceover from the SRT (translated or original)
+        quality_report = build_voiceover_from_srt(
+            srt_path=translated_srt_path,
+            output_audio_path=audio_path,
+            default_voice=default_voice,
+            speaker_voices=speaker_voices,
+            rate=rate,
+            volume=volume,
+            pitch=pitch,
+            word_timings=word_timings,
+            use_word_timing=use_word_timing,
+            elastic_timing=elastic_timing,
+            verbose=not args.quiet,
+        )
+
         # Clean up temp files
         if not args.keep_srt and srt_path == "temp_transcription.srt":
             try:
                 Path(srt_path).unlink()
+            except:
+                pass
+
+        # Also clean up translated SRT if translation was done and keep_srt is False
+        if not args.keep_srt and translated_srt_path != srt_path:
+            try:
+                Path(translated_srt_path).unlink()
             except:
                 pass
 
