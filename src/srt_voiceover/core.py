@@ -129,17 +129,17 @@ def synthesize_speech_segment(
 ) -> AudioSegment:
     """
     Synthesize speech using Edge TTS and return a pydub AudioSegment.
-    
+
     Args:
         text: Text to synthesize
         voice: Voice ID to use (e.g., "en-US-AndrewMultilingualNeural")
         rate: Speech rate adjustment (e.g., "+0%", "-50%", "+100%")
         volume: Volume adjustment (e.g., "+0%", "-50%", "+100%")
         pitch: Pitch adjustment (e.g., "+0Hz", "-50Hz", "+100Hz")
-        
+
     Returns:
         AudioSegment containing the synthesized speech
-        
+
     Raises:
         ImportError: If edge_tts is not installed
     """
@@ -148,7 +148,15 @@ def synthesize_speech_segment(
             "edge-tts not installed. Install it with:\n"
             "pip install edge-tts"
         )
-    
+
+    # Normalize unicode characters to NFC form to prevent encoding issues
+    import unicodedata
+    text = unicodedata.normalize('NFC', text)
+    # Replace special unicode hyphens with regular hyphens
+    text = text.replace('\u2011', '-').replace('\u2012', '-').replace('\u2013', '-').replace('\u2014', '-')
+    # Replace special unicode spaces with regular spaces
+    text = text.replace('\u202f', ' ').replace('\u00a0', ' ')
+
     # Create communicate object
     communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch)
     
