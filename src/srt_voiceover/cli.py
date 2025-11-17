@@ -6,6 +6,7 @@ import argparse
 import sys
 import json
 import yaml
+import logging
 from pathlib import Path
 from typing import Optional, Dict
 
@@ -164,6 +165,7 @@ Examples:
     # Global options
     parser.add_argument('--init-config', metavar='FILE', help='Create a sample configuration file')
     parser.add_argument('--list-voices', action='store_true', help='List all available Edge TTS voices')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging (show debug messages)')
     parser.add_argument('--version', action='version', version=f'srt-voiceover {__version__}')
     
     # Subcommands
@@ -260,7 +262,17 @@ Examples:
             sys.argv.insert(1, 'voiceover')
     
     args = parser.parse_args()
-    
+
+    # Configure logging based on verbose flag
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format='[%(name)s] %(levelname)s: %(message)s'
+    )
+
+    if args.verbose:
+        print("[DEBUG] Verbose logging enabled\n")
+
     # Handle --init-config
     if args.init_config:
         format_type = 'json' if args.init_config.endswith('.json') else 'yaml'

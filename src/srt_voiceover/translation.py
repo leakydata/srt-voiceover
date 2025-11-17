@@ -9,9 +9,13 @@ Handles SRT translation while preserving:
 
 import json
 import requests
+import logging
 from typing import Optional, Dict, List, Tuple
 from pathlib import Path
 import pysrt
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 # Default Ollama configuration
@@ -84,35 +88,45 @@ class OllamaConfig:
             True if Ollama is accessible, False otherwise
         """
         try:
+            if verbose:
+                print(f"[Validating] Connecting to Ollama at {self.base_url}...")
+            logger.debug(f"Validating Ollama connection at {self.base_url}")
+
             response = requests.get(
                 f"{self.base_url}/api/tags",
                 timeout=10,
             )
             response.raise_for_status()
+            logger.debug(f"Successfully connected to Ollama")
 
             data = response.json()
             available_models = [m["name"].split(":")[0] for m in data.get("models", [])]
+            logger.debug(f"Available models: {available_models}")
 
             if self.model not in available_models:
                 if verbose:
                     print(f"[WARNING] Model '{self.model}' not found in Ollama")
                     print(f"Available models: {', '.join(available_models)}")
+                logger.warning(f"Model '{self.model}' not found. Available: {available_models}")
                 return False
 
             if verbose:
                 print(f"✓ Ollama connected at {self.base_url}")
                 print(f"✓ Using model: {self.model}")
+            logger.info(f"Ollama validation successful - Model '{self.model}' ready")
 
             return True
 
-        except requests.ConnectionError:
+        except requests.ConnectionError as e:
             if verbose:
                 print(f"[ERROR] Cannot connect to Ollama at {self.base_url}")
                 print(f"        Make sure Ollama is running or check the base URL")
+            logger.error(f"Connection error: {e}")
             return False
         except Exception as e:
             if verbose:
                 print(f"[ERROR] Failed to validate Ollama: {e}")
+            logger.error(f"Validation failed: {e}")
             return False
 
 
@@ -151,6 +165,9 @@ Translation:"""
         if verbose:
             print(f"  Translating to {language_name}...", end=" ", flush=True)
 
+        logger.debug(f"Translating text to {language_name}")
+        logger.debug(f"Sending request to {config.base_url}/api/generate with model={config.model}")
+
         response = requests.post(
             f"{config.base_url}/api/generate",
             json={
@@ -163,16 +180,22 @@ Translation:"""
         )
 
         response.raise_for_status()
+        logger.debug(f"Received response from Ollama: status={response.status_code}")
+
         data = response.json()
+        logger.debug(f"Ollama response: {data.get('response', '')[:100]}...")
 
         translated = data.get("response", "").strip()
 
         if verbose:
             print("✓")
 
+        logger.debug(f"Translation complete: {translated[:50]}...")
+
         return translated
 
     except requests.ConnectionError as e:
+        logger.error(f"Connection error during translation: {e}")
         raise OllamaConnectionError(
             f"Cannot connect to Ollama at {config.base_url}: {e}"
         )
@@ -272,10 +295,14 @@ def translate_srt(
     if not srt_file.exists():
         raise FileNotFoundError(f"SRT file not found: {srt_path}")
 
+    logger.info(f"Starting SRT translation from {srt_path}")
+    logger.debug(f"Target language: {target_language}, Ollama: {config.base_url}, Model: {config.model}")
+
     if verbose:
         print(f"\nTranslating SRT to {LANGUAGE_NAMES.get(target_language, target_language)}...")
 
     subs = pysrt.open(srt_path, encoding="utf-8")
+    logger.info(f"Loaded SRT file with {len(subs)} segments")
 
     # Translate each segment
     translated_subs = pysrt.SubRipFile()
@@ -283,6 +310,7 @@ def translate_srt(
     for i, segment in enumerate(subs, 1):
         if verbose:
             print(f"  [{i}/{len(subs)}]", end=" ")
+        logger.debug(f"Translating segment {i}/{len(subs)}: {segment.text[:50]}...")
 
         translated_segment = translate_srt_segment(
             segment, target_language, config, verbose=verbose
@@ -299,6 +327,7 @@ def translate_srt(
 
     # Save translated SRT
     translated_subs.save(output_path, encoding="utf-8")
+    logger.info(f"Translated SRT saved to {output_path}")
 
     if verbose:
         print(f"\n[OK] Translated SRT saved: {output_path}")
