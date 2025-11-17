@@ -52,6 +52,17 @@ Covers:
   - JSON, VTT, SRT, CSV, FCPXML
   - Integration examples
 
+### Multi-Language Translation (NEW!)
+→ **[TRANSLATION_GUIDE.md](TRANSLATION_GUIDE.md)** (15 minutes)
+
+Phase 1 & 2 Ollama integration for automatic translation:
+- Translation workflow (transcribe → translate → voiceover)
+- Ollama setup (local and remote with ngrok)
+- Supported languages (16+)
+- CLI and Python API examples
+- Batch processing
+- Troubleshooting
+
 ### Implementation & Architecture
 → **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** (15 minutes)
 
@@ -73,6 +84,7 @@ For developers interested in:
 | Single speaker voiceover | QUICKSTART | `srt-voiceover voiceover input.srt -o output.mp3` |
 | Multi-speaker with labels | QUICK_START_ENHANCEMENTS | `srt-voiceover revoice video.mp4 -o output.mp3 -c config.yaml` |
 | Perfect video sync | ADVANCED_FEATURES | `srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing --elastic-timing` |
+| Multilingual dubbing | TRANSLATION_GUIDE | `srt-voiceover revoice video.mp4 -o output.mp3 --translate-to es --use-word-timing` |
 | Quality analysis | ADVANCED_FEATURES | See Quality Metrics section |
 | Word timing export | ADVANCED_FEATURES | See Multi-Format Export section |
 
@@ -86,6 +98,7 @@ For developers interested in:
 | Quality reporting | ADVANCED_FEATURES | Quality Metrics & Reporting |
 | Export options | ADVANCED_FEATURES | Word Timing Export |
 | Configuration | DOCUMENTATION | Configuration |
+| Translation | TRANSLATION_GUIDE | Ollama Integration |
 | Multi-language | README | Multi-Language Support |
 
 ---
@@ -138,6 +151,14 @@ ADVANCED_FEATURES.md (DEEP DIVE)
 ├── Export formats
 └── Complete examples
 
+TRANSLATION_GUIDE.md (MULTILINGUAL)
+├── Ollama setup (local & remote)
+├── Translation workflow
+├── Supported languages (16+)
+├── CLI & Python API
+├── Batch processing
+└── Troubleshooting
+
 DOCUMENTATION.md (REFERENCE)
 ├── Full CLI reference
 ├── All options explained
@@ -177,6 +198,15 @@ srt-voiceover revoice video.mp4 -o output.mp3 --use-word-timing --elastic-timing
 # With custom voices
 srt-voiceover revoice video.mp4 -o output.mp3 -c config.yaml --use-word-timing
 
+# Transcribe and translate to Spanish
+srt-voiceover transcribe video.mp4 -o subs.srt --translate-to es
+
+# Revoice with translation (complete workflow)
+srt-voiceover revoice video.mp4 -o output.mp3 --translate-to es --use-word-timing
+
+# With remote Ollama (ngrok)
+srt-voiceover revoice video.mp4 -o output.mp3 --translate-to fr --ollama-base-url https://ngrok-url
+
 # List voices
 srt-voiceover --list-voices
 
@@ -192,6 +222,8 @@ srt-voiceover --init-config config.yaml
 | Elastic timing | `--elastic-timing` | ADVANCED_FEATURES |
 | Time stretching | `--enable-time-stretch` | DOCUMENTATION |
 | Speaker detection | `--multi-speaker` | QUICK_START_ENHANCEMENTS |
+| Translation (Ollama) | `--translate-to LANG` | TRANSLATION_GUIDE |
+| Custom Ollama URL | `--ollama-base-url URL` | TRANSLATION_GUIDE |
 | Professional diarization | `--use-pyannote` | DOCUMENTATION |
 | GPU acceleration | `--device cuda` | README |
 | Quality report | `verbose=True` | ADVANCED_FEATURES |
