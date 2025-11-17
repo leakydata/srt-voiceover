@@ -15,6 +15,7 @@ Perfect free alternative to SpeechGen, Murf.ai, and other paid dubbing services!
 - 🎯 **Per-Voice Optimization** - 30+ voice profiles for natural sound
 - 📊 **Quality Metrics** - Automatic sync quality reporting with issue detection
 - 🌍 **400+ Voices** - Microsoft Edge TTS in 80+ languages
+- 🌐 **Automatic Translation** - Translate SRT to 16+ languages using Ollama (local or remote)
 - 🎬 **Video Dubbing** - Complete pipeline for video re-voicing
 - ✏️ **Edit Workflow** - Fix transcription errors before voiceover generation
 - 📤 **Multi-Format Export** - WebVTT, SRT, JSON, CSV, FCPXML
@@ -64,10 +65,12 @@ srt-voiceover voiceover transcript.srt -o output.mp3 \
 
 - **[Quick Start Guide](QUICKSTART.md)** - 30-second to 5-minute tutorials
 - **[Advanced Features Guide](ADVANCED_FEATURES.md)** - Fuzzy matching, voice profiles, quality metrics
+- **[Translation Guide](TRANSLATION_GUIDE.md)** - Automatic SRT translation using Ollama (Phase 1 & 2)
 - **[Quick Start Enhancements](QUICK_START_ENHANCEMENTS.md)** - New features overview
 - **[Full Documentation](DOCUMENTATION.md)** - Complete guide with examples
 - **[Implementation Details](IMPLEMENTATION_SUMMARY.md)** - Technical architecture
 - **[Contributing Guide](CONTRIBUTING.md)** - Development setup
+- **[Documentation Index](DOCS_INDEX.md)** - Navigate all guides by use case and feature
 
 ## 🎯 Use Cases
 
@@ -193,6 +196,33 @@ Popular voices:
 - French: `fr-FR-DeniseNeural`, `fr-CA-SylvieNeural`
 - German: `de-DE-KatjaNeural`, `de-DE-ConradNeural`
 - Japanese: `ja-JP-NanamiNeural`, `ja-JP-KeitaNeural`
+
+## 🌐 Automatic Translation (NEW!)
+
+Translate subtitles to 16+ languages automatically using Ollama:
+
+```bash
+# Transcribe English video and translate to Spanish
+srt-voiceover transcribe video.mp4 -o output.srt --translate-to es
+
+# Complete workflow: transcribe → translate → revoice
+srt-voiceover revoice video.mp4 -o spanish_audio.mp3 \
+  --translate-to es \
+  --use-word-timing --elastic-timing
+
+# Using remote Ollama (e.g., via ngrok)
+srt-voiceover revoice video.mp4 -o output.mp3 \
+  --translate-to fr \
+  --ollama-base-url https://your-ngrok-url.ngrok-free.app
+```
+
+**Requirements:**
+- [Ollama](https://ollama.ai) - Download and run locally or access remotely
+- Model: `ollama pull mistral` (or any available model)
+
+**Supported languages:** Spanish, French, German, Italian, Portuguese, Russian, Japanese, Chinese, Korean, Arabic, Hindi, Dutch, Polish, Turkish, Thai, Vietnamese
+
+See [Translation Guide](TRANSLATION_GUIDE.md) for details on setup and configuration.
 
 ## 👥 Multi-Speaker Support
 
@@ -355,6 +385,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### Technologies
 - **[OpenAI Whisper](https://github.com/openai/whisper)** - Speech recognition
 - **[Microsoft Edge TTS](https://github.com/rany2/edge-tts)** - Text-to-speech
+- **[Ollama](https://ollama.ai)** - Local LLM inference for translation (Phase 1 & 2)
 - **[Pyannote.audio](https://github.com/pyannote/pyannote-audio)** - Speaker diarization
 - **[FFmpeg](https://ffmpeg.org/)** - Audio/video processing
 
@@ -363,13 +394,20 @@ This project was created by **Nathan Jones** through an iterative collaborative 
 
 ## 🗺️ Roadmap
 
+### Recently Completed (Phase 1 & 2)
+- ✅ **Automatic Translation** - Translate SRT to 16+ languages using Ollama (local or remote)
+- ✅ **CLI Translation Integration** - `--translate-to` flag for transcribe and revoice commands
+- ✅ **Remote Ollama Support** - Access Ollama via ngrok URLs for remote instances
+
+### Coming Soon (Phase 3 & 4)
 Future features and improvements we're planning:
 
-### Translation & Localization
-- **Multi-language video translation** - Automatically translate and dub videos into other languages
+### Translation & Localization Enhancements
+- **Extended LLM Support** - OpenAI GPT, Anthropic Claude, DeepSeek (Phase 4)
+- **Translation Caching** - Cache translations for faster re-runs (Phase 3)
+- **Quality Metrics** - Automatic translation quality scoring (Phase 3)
 - **YouTube accessibility** - Make content accessible across language barriers
 - **Movie localization** - Professional-quality dubbing for films
-- **Subtitle translation pipeline** - Integrate with translation APIs (Google Translate, DeepL)
 - **Multi-track video creation** - One-command generation of videos with multiple audio/subtitle tracks
 - **Subtitle embedding** - Automatically embed soft subtitles (toggle-able, not burned-in)
 
