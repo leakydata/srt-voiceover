@@ -631,6 +631,31 @@ def handle_revoice_command(args):
                     )
                     print("[OK] Translation complete: " + srt_for_voiceover)
 
+                    # Update default voice for the translated language if not explicitly set
+                    if default_voice == "en-US-AndrewMultilingualNeural":
+                        language_voices = {
+                            "es": "es-ES-ElviraNeural",
+                            "fr": "fr-FR-DeniseNeural",
+                            "de": "de-DE-KatjaNeural",
+                            "it": "it-IT-DiegoNeural",
+                            "pt": "pt-BR-AntônioNeural",
+                            "ru": "ru-RU-DariaNeural",
+                            "ja": "ja-JP-NanamiNeural",
+                            "zh": "zh-CN-XiaoxuanNeural",
+                            "ko": "ko-KR-SunHiNeural",
+                            "ar": "ar-EG-SalmaNeural",
+                            "hi": "hi-IN-MadhurNeural",
+                            "nl": "nl-NL-ColetteNeural",
+                            "pl": "pl-PL-ZofiaNeural",
+                            "tr": "tr-TR-EmelNeural",
+                            "th": "th-TH-AcharaNeuralNeural",
+                            "vi": "vi-VN-HoaiMyNeural",
+                        }
+                        if args.translate_to in language_voices:
+                            default_voice = language_voices[args.translate_to]
+                            if not args.quiet:
+                                print("[OK] Using voice: " + default_voice)
+
             except ImportError:
                 print("[ERROR] Translation requires: pip install requests")
                 sys.exit(1)
@@ -658,7 +683,6 @@ def handle_revoice_command(args):
             volume=volume,
             pitch=pitch,
             word_timings=word_timings,
-            use_word_timing=use_word_timing,
             elastic_timing=elastic_timing,
             verbose=not args.quiet,
         )

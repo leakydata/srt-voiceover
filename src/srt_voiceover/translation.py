@@ -79,7 +79,7 @@ class OllamaConfig:
 
     def validate(self, verbose: bool = True) -> bool:
         """
-        Check if Ollama is accessible and model is available.
+        Check if Ollama is accessible.
 
         Args:
             verbose: Print status messages
@@ -99,21 +99,10 @@ class OllamaConfig:
             response.raise_for_status()
             logger.debug(f"Successfully connected to Ollama")
 
-            data = response.json()
-            available_models = [m["name"].split(":")[0] for m in data.get("models", [])]
-            logger.debug(f"Available models: {available_models}")
-
-            if self.model not in available_models:
-                if verbose:
-                    print(f"[WARNING] Model '{self.model}' not found in Ollama")
-                    print(f"Available models: {', '.join(available_models)}")
-                logger.warning(f"Model '{self.model}' not found. Available: {available_models}")
-                return False
-
             if verbose:
-                print(f"✓ Ollama connected at {self.base_url}")
-                print(f"✓ Using model: {self.model}")
-            logger.info(f"Ollama validation successful - Model '{self.model}' ready")
+                print(f"[OK] Ollama connected at {self.base_url}")
+                print(f"[OK] Using model: {self.model}")
+            logger.info(f"Ollama connection successful - will use model '{self.model}'")
 
             return True
 
@@ -189,7 +178,7 @@ Translated text:"""
         translated = data.get("response", "").strip()
 
         if verbose:
-            print("✓")
+            print("[OK]")
 
         logger.debug(f"Translation complete: {translated[:50]}...")
 
@@ -361,7 +350,7 @@ def get_available_ollama_models(
         response.raise_for_status()
 
         data = response.json()
-        models = [m["name"].split(":")[0] for m in data.get("models", [])]
+        models = [m["name"] for m in data.get("models", [])]
 
         if verbose:
             print(f"Available Ollama models ({len(models)}):")
