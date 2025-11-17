@@ -38,15 +38,44 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Project specific - generated audio files
+# Project specific - generated files
+# Audio files
 *.mp3
 *.wav
+*.m4a
+*.aac
+*.flac
+
+# Video files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+
+# Subtitle files
+*.srt
 # Don't ignore example SRT files
 !examples/*.srt
-# Ignore all other SRT files
-*.srt
+
+# Word timing files
+*_word_timings.json
+
+# Logs
 logs/
 *.log
+
+# Temporary files from processing
+temp_*.wav
+temp_*.mp3
+temp_*.srt
+*_dubbed.mp4
+*_dubbed.mp3
+test_*.mp3
+test_*.mp4
+test_*.srt
 
 # User config files (keep examples)
 config.yaml

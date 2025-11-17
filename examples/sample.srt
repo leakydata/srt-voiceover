@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:03,500
+Nathan: Welcome to our tutorial on converting subtitles to voiceovers.
+
+2
+00:00:03,500 --> 00:00:07,000
+Nicole: This is a powerful tool for creating automated dubbing.
+
+3
+00:00:07,500 --> 00:00:11,000
+Nathan: Let's see how easy it is to use.
+
+4
+00:00:11,500 --> 00:00:15,000
+Nicole: You can assign different voices to different speakers.
+
+5
+00:00:15,500 --> 00:00:19,000
+Nathan: And the timing is automatically synchronized.
+
+6
+00:00:19,500 --> 00:00:22,500
+Nicole: Perfect for video dubbing and podcast creation!
+
