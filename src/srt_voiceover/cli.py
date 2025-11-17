@@ -203,6 +203,12 @@ Examples:
                                     help='Device to use for transcription/diarization (default: auto)')
     transcribe_parser.add_argument('--save-word-timings', action='store_true',
                                     help='Save word-level timings to JSON file for later use (enables two-step workflow)')
+    transcribe_parser.add_argument('--translate-to', metavar='LANG',
+                                    help='Translate transcribed SRT to target language (e.g., es, fr, de) using Ollama')
+    transcribe_parser.add_argument('--ollama-base-url',
+                                    help='Ollama API base URL (default: http://localhost:11434)')
+    transcribe_parser.add_argument('--translation-model', default='mistral',
+                                    help='Ollama model for translation (default: mistral)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
