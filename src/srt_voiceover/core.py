@@ -603,7 +603,9 @@ def build_voiceover_from_srt(
                 f"Processing subtitle {segment_num}/{total_segments} - "
                 f"Speaker: {speaker or '(default)'} Voice: {voice_for_segment}"
             )
-            print(f"   Text: {repr(cleaned_text[:60])}")
+            # Sanitize text for terminal output (replace non-ASCII chars with ?)
+            sanitized_text = cleaned_text[:60].encode('ascii', errors='replace').decode('ascii')
+            print(f"   Text: {repr(sanitized_text)}")
 
             if word_timings and seg_data.get('confidence', 0) > 0:
                 # Show word matching confidence
