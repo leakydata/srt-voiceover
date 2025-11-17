@@ -342,7 +342,9 @@ def build_voiceover_from_srt(
     word_timings: Optional[list] = None,
     elastic_timing: bool = False,
     verbose: bool = True,
-) -> None:
+    quality_report: Optional[SyncQualityReport] = None,
+    enable_voice_profiles: bool = True,
+) -> SyncQualityReport:
     """
     Build a complete voiceover audio file from an SRT subtitle file using Edge TTS.
     
