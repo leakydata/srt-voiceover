@@ -347,7 +347,13 @@ def build_voiceover_from_srt(
 ) -> SyncQualityReport:
     """
     Build a complete voiceover audio file from an SRT subtitle file using Edge TTS.
-    
+
+    This function integrates advanced features:
+    - Fuzzy word matching for confidence scoring
+    - Per-voice rate profiles for natural sound
+    - Quality metrics and reporting
+    - Support for both pre-labeled and auto-detected speakers
+
     Args:
         srt_path: Path to input SRT file
         output_audio_path: Path for output audio file
@@ -361,7 +367,12 @@ def build_voiceover_from_srt(
         word_timings: Optional word-level timing data for dynamic rate matching
         elastic_timing: Enable elastic timing windows (requires word_timings)
         verbose: Print progress information
-        
+        quality_report: Optional pre-existing report to add to (creates new if None)
+        enable_voice_profiles: Use per-voice rate profiles (default True)
+
+    Returns:
+        SyncQualityReport with detailed metrics
+
     Raises:
         ImportError: If edge_tts is not installed
     """
