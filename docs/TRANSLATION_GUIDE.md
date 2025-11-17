@@ -32,7 +32,7 @@ ollama pull gpt-oss:20b
 # Expose local Ollama to internet
 ngrok http 11434
 
-# Share the ngrok URL (e.g., https://vast-golden-wasp.ngrok-free.app)
+# Share the ngrok URL (e.g., https://your-ngrok-url.ngrok-free.app)
 ```
 
 ### Python Dependencies
@@ -70,7 +70,7 @@ srt-voiceover transcribe english_video.mp4 \
 srt-voiceover transcribe video.mp4 \
   -o output.srt \
   --translate-to fr \
-  --ollama-base-url https://vast-golden-wasp.ngrok-free.app \
+  --ollama-base-url https://your-ngrok-url.ngrok-free.app \
   --translation-model mistral
 ```
 
@@ -95,7 +95,7 @@ Create `config.yaml`:
 
 ```yaml
 # Ollama configuration
-ollama_base_url: "https://vast-golden-wasp.ngrok-free.app"
+ollama_base_url: "https://your-ngrok-url.ngrok-free.app"
 translation_model: "gpt-oss:20b"
 
 # Default voice for translated voiceover

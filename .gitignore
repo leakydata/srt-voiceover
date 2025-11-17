@@ -95,3 +95,4 @@ htmlcov/
 # Keep the old script for reference but rename it
 srt_to_edgtts_voiceover_old.py
 
+.claude/
