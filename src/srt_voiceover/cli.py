@@ -207,8 +207,8 @@ Examples:
                                     help='Translate transcribed SRT to target language (e.g., es, fr, de) using Ollama')
     transcribe_parser.add_argument('--ollama-base-url',
                                     help='Ollama API base URL (default: http://localhost:11434)')
-    transcribe_parser.add_argument('--translation-model', default='mistral',
-                                    help='Ollama model for translation (default: mistral)')
+    transcribe_parser.add_argument('--translation-model', default='gpt-oss:20b',
+                                    help='Ollama model for translation (default: gpt-oss:20b)')
     transcribe_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     
     # Revoice subcommand (complete workflow)
@@ -239,8 +239,8 @@ Examples:
                                  help='Translate transcribed SRT to target language (e.g., es, fr, de) using Ollama')
     revoice_parser.add_argument('--ollama-base-url',
                                  help='Ollama API base URL (default: http://localhost:11434)')
-    revoice_parser.add_argument('--translation-model', default='mistral',
-                                 help='Ollama model for translation (default: mistral)')
+    revoice_parser.add_argument('--translation-model', default='gpt-oss:20b',
+                                 help='Ollama model for translation (default: gpt-oss:20b)')
     revoice_parser.add_argument('--keep-srt', action='store_true', help='Keep temporary SRT file')
     revoice_parser.add_argument('-q', '--quiet', action='store_true', help='Suppress progress output')
     

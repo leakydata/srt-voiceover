@@ -17,7 +17,7 @@ import pysrt
 # Default Ollama configuration
 OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434"
 OLLAMA_TIMEOUT = 300  # seconds
-OLLAMA_DEFAULT_MODEL = "mistral"
+OLLAMA_DEFAULT_MODEL = "gpt-oss:20b"  # New high-quality model (July 2025)
 
 # Language code mappings
 LANGUAGE_NAMES = {
