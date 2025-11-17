@@ -322,7 +322,9 @@ def calculate_segment_rate(
                     rate_percent = int((rate_multiplier - 1.0) * 100)
     
     # Clamp to REASONABLE limits for natural-sounding speech
-    rate_percent = max(-20, min(40, rate_percent))
+    # Asymmetric: slowdowns are less perceptible than speedups
+    # Allow more slowdown range (-40%) but keep speedup conservative (+40%)
+    rate_percent = max(-40, min(40, rate_percent))
     
     return rate_percent, adjusted_start, adjusted_end
 
